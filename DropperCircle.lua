@@ -10,6 +10,7 @@
 local iRadius = 40
 
 -- centre around which to place the nodes
+-- project starfish
 local tCentre = {
  x = 30000,
  y = 9014, -- height
@@ -44,6 +45,13 @@ local fAngleIgnoreLow = 315
 local fAngleIgnoreHigh = 361
 
 --------------------------------------------------------------------------- know what you are doing here ----------------------
+
+local iShipSize = 3
+
+-- currently jumpdrive freezes with small steps
+-- local iAngleStep = math.deg( 2 * ( math.asin( math.sqrt( iShipSize * iShipSize * 2 ) / ( 2 * iRadius ) ) ) )
+
+local fOneBlockAngle = math.deg( 2 * ( math.asin( math.sqrt( 2 ) / ( 2 * iRadius ) ) ) )
 
 -- offset of deployer relative to jump-drive
 local tOffset = {
@@ -128,7 +136,7 @@ end
 
 
 -- wrapper functions fo Digiline to shorten typing...
-local fDLs  = function(sChannel, mMessage) 
+local fDLs  = function(sChannel, mMessage)
  digiline_send(sChannel, mMessage)
 end
 
@@ -167,7 +175,7 @@ end -- fDump
 
 -- calculate coordinates for a certain angle 0 to 360
 local fCirclePoint = function(iR, iAngleDegree)
- 
+
  -- convert
  local fAngle = iAngleDegree * math.pi / 180
  -- calculate coordinate and multiply with radius
@@ -188,7 +196,7 @@ end -- fCirclePoint
 -- rounding causes duplicates, we don't want to drop more than one
 -- node at any given point
 local fIsUsed = function(tPos)
- 
+
  -- can't have duplicate on first try (or you really are looking for it ;)
  if 0 == #mem.tUsedPoints then return false end
 
@@ -267,8 +275,16 @@ local fDoNext = function()
  else
   mem.iCountRetries = 0
  end
+
+ local fAngleAdditionalIncrement = 0
+ -- check if crossing 0 angle
+ if (mem.iCountLast%360 > 180) and (mem.iCount%360 < 180) then
+  fAngleAdditionalIncrement = fOneBlockAngle
+  fD('+1 block angle')
+ end
+
  mem.iCountLast = mem.iCount
- mem.iCount = mem.iCount + iAngleStep
+ mem.iCount = mem.iCount + iAngleStep + fAngleAdditionalIncrement
  if not (0 > fAngleIgnoreLow) then
 --fD('i')
   while (mem.iCount%360 > fAngleIgnoreLow) and (mem.iCount%360 < fAngleIgnoreHigh) do
@@ -276,7 +292,7 @@ local fDoNext = function()
   end -- loop out of ignore range
  end -- if using ignore
  mem.bEven = not mem.bEven
- 
+
  -- output some info
  local sEvenOdd = 'Even'
  if not mem.bEven then sEvenOdd = 'Odd' end
@@ -341,7 +357,7 @@ elseif c.e.digiline ==  sET then
 
      -- wait and try next
      if bSelf then sOut = sOut .. ' S' else sOut = sOut .. ' O' end
-     
+
     else
 
      -- wait and try again
@@ -422,7 +438,7 @@ elseif c.e.interrupt == sET then
 
   mem.fCountDrops = mem.fCountDrops + .5
   if  mem.fCountDrops < iDrops then
-   -- repeat 
+   -- repeat
    interrupt(c.i.deployer)
   else
    -- reset counter
@@ -437,7 +453,7 @@ elseif c.e.interrupt == sET then
   return
 
  --end -- deployer
- 
+
 -- END interrupt ---------------------------------------------------------------END interrrupts-----------------------------------------
 -- uncaught events
 else
