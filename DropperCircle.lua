@@ -3,7 +3,9 @@
 -- by SwissalpS and SwissaplS
 -- Thanks to the contributions from int
 -- Drop sand/gravel/snow in a circle to mark for building circular structures
--- Can also place other nodes that can be placed with deployer
+-- Can also be used to place other node-types
+-- auto iAngleStep and every full circle increment by int
+-- at some point refactor all this code: iAngle -> dAngle as it's not an int but a float and I use f for functions so d for double
 
 -- main switch (software-lock to stop any calculations just remove the --)
 --if 1 == 1 then return end
@@ -38,7 +40,7 @@ local iAngleLast = 16000
 local iAngleStep = 40
 
 -- every second jump go somewhere else.
--- default is 180 but you may want smth like 90 or 20 depending on location
+-- default is 180 but you may want smth like 90 or 20 depending on location and size of ship
 -- not used in version a0.11
 local fAngleOddJumps = 45
 
@@ -53,18 +55,17 @@ local iShipSize = 3
 
 -- currently jumpdrive freezes with small steps
 -- local iAngleStep = math.deg( 2 * ( math.asin( math.sqrt( iShipSize * iShipSize * 2 ) / ( 2 * iRadius ) ) ) )
-
 local fOneBlockAngle = math.deg( 2 * ( math.asin( math.sqrt( 2 ) / ( 2 * iRadius ) ) ) )
 
 -- offset of deployer relative to jump-drive
 local tOffset = {
     x = 1,
-    y = 1,
+    y = 3,
     z = 1
 }
 
 -- port on which the button is on (upper case A,B,C,D)
--- currentl not used -> using digiline button on channel 'b'
+-- currently not used -> using digiline button on channel 'b'
 local sButton = 'B'
 
 -- port on which the deployer is connected (lower case a,b,c,d)
@@ -185,7 +186,14 @@ fDump = function(mValue)
 end -- fDump
 
 
--- calculate coordinates for a certain angle 0 to n
+-- round numbers naturally and return integer
+local fRound = function(n)
+    -- round the value splitting at 0.5
+    return n + 0.5 - (n - 0.5) % 1
+end -- fRound
+
+
+-- calculate coordinates for a certain angle
 local fCirclePoint = function(iR, iAngleDegree)
 
     -- convert
@@ -194,12 +202,8 @@ local fCirclePoint = function(iR, iAngleDegree)
     local fX = iR * math.cos(fAngle)
     local fZ = iR * math.sin(fAngle)
 
-    -- round the values splitting at 0.5
-    local iX = fX + 0.5 - (fX - 0.5) % 1
-    local iZ = fZ + 0.5 - (fZ - 0.5) % 1
-
-    -- return indexed table
-    return { x = iX, z = iZ }
+    -- return indexed table with rounded values
+    return { x = fRound(fX), z = fRound(fZ) }
 
 end -- fCirclePoint
 
@@ -225,6 +229,7 @@ local fIsUsed = function(tPos)
 
 end -- fIsUsed
 
+---------------------------------------------------------- fDoNext -----------------
 
 local fDoNext = function()
 
@@ -325,6 +330,9 @@ local mEM = event.msg or c.b.sNA
 -- this is the 'init' portion --------------------------------------------------------init---------------------------------------------
 if c.e.program == sET then
 
+    iAngleStep = math.deg( 2 * ( math.asin( math.sqrt( iShipSize * iShipSize * 2 ) / ( 2 * iRadius ) ) ) )
+    iAngleStep = fRound(iAngleStep * 100) * 0.01
+
     -- reset values kept in mem
     mem.iCount = iFirstAngle
     mem.fCountDrops = 0
@@ -361,6 +369,7 @@ elseif c.e.digiline ==  sET then
                 local sFirst = s:sub(8, 8) or '!'
                 local bSelf = 'j' ==  sFirst
                 local bObstructed = 'J' == sFirst
+                local bUncharted = 'r' == sFirst
                 local bMapgen = 'm' == sFirst
 
                 if bSelf or bObstructed then -- Jump target is obstructed
