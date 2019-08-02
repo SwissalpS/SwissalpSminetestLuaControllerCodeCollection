@@ -28,7 +28,7 @@ local tCentre = {
 -- default to 1
 local iDrops = 1
 
--- start at this angle 0 to n
+-- start at this angle [0 to n]
 local nAngleFirst = 0
 
 -- stop at this angle e.g. 720
@@ -51,12 +51,6 @@ local nAngleIgnoreHigh = 361
 
 --------------------------------------------------------------------------- know what you are doing here ----------------------
 
-local iShipSize = 3
-
--- currently jumpdrive freezes with small steps
--- local nAngleStep = math.deg( 2 * ( math.asin( math.sqrt( iShipSize * iShipSize * 2 ) / ( 2 * iRadius ) ) ) )
-local nAngleOneNode = math.deg( 2 * ( math.asin( math.sqrt( 2 ) / ( 2 * iRadius ) ) ) )
-
 -- offset of deployer relative to jump-drive
 local tOffset = {
     x = 1,
@@ -66,7 +60,7 @@ local tOffset = {
 
 -- port on which the button is on (upper case A,B,C,D)
 -- currently not used -> using digiline button on channel 'b'
-local sPortButton = 'B'
+local sPinNameButton = 'B'
 
 -- port on which the deployer is connected (lower case a,b,c,d)
 local sPinDeployer = 'd'
@@ -195,6 +189,11 @@ local fRound = function(n)
     -- round the value splitting at 0.5
     return n + 0.5 - (n - 0.5) % 1
 end -- fRound
+
+
+local fAngleOneNode = function(iR)
+    return math.deg(2 * (math.asin(math.sqrt(2) / (2 * iR))))
+end -- fAngleOneNode
 
 
 -- calculate coordinates for a certain angle (X, Z plane)
@@ -353,7 +352,7 @@ local fDoNext = function()
     local nAngleAdditionalIncrement = 0
     -- check if crossing 0 angle
     if (mem.nAnglePrevious % 360 > 180) and (mem.nAngleCurrent % 360 < 180) then
-        nAngleAdditionalIncrement = nAngleOneNode
+        nAngleAdditionalIncrement = fAngleOneNode(iRadius)
         fD('+1 node angle')
     end
 
@@ -497,7 +496,7 @@ elseif c.e.off == sET then
 
     local sPin = event.pin.name
     --fD('Pin: ' .. sPin)
-    if sPortButton == sPin then
+    if sPinNameButton == sPin then
         --fD('butt nxt')
 
         --fDoNext()
