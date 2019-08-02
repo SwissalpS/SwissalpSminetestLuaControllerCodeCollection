@@ -268,6 +268,26 @@ local fIsUsedVertical = function(tPos)
 end -- fIsUsedVertical
 
 
+local fDoDrop = function()
+
+    port[sPinDeployer] = not pin[sPinDeployer]
+
+    mem.fCountDrops = mem.fCountDrops + .5
+    if  mem.fCountDrops < iDrops then
+        -- repeat
+        interrupt(c.i.deployer)
+    else
+        -- reset counter
+       mem.fCountDrops = 0
+       mem.bDropping = false
+       --fD('Done Dropping')
+        if bAutoPilot then
+            interrupt(c.i.nextJump)
+        end -- auto pilot
+    end -- if repeat
+
+end -- fDoDrop
+
 ---------------------------------------------------------- fDoNext -----------------
 
 local fDoNext = function()
@@ -318,7 +338,7 @@ local fDoNext = function()
         interrupt(c.i.deployer)
     end -- if not used pos
 
-    -- get out of infinite loops
+    -- get out of infResete loops
     if mem.nAnglePrevious == mem.nAngleCurrent then
         mem.nAngleCurrentRetries = mem.nAngleCurrentRetries +1
         -- tried 4 times? that's enough
@@ -357,18 +377,66 @@ local fDoNext = function()
 end -- fDoNext
 
 
--- read event
-local sET = event.type
-local sEC = event.channel or c.sNil
-local mEM = event.msg or c.b.sNA
---local sEID = event.iid or c.sNil
+local fHandleJDresponse = function(mEM)
 
--- debugging the event details
---fD(sET .. " " .. sEC .. " " .. sEID .. " " .. fDump(mEM))
+    local sOut
+    mem.errorCode = not mEM['success']
+    if mem.errorCode then
+        --fD('fail')
+        sOut = 'fail'
+        mem.bDropping = false
+        interrupt(c.i.nextJump)
 
--- 'First run' (when 'Execute' is clicked on code-edit-form)
--- this is the 'init' portion --------------------------------------------------------init---------------------------------------------
-if c.e.program == sET then
+        if event.msg.time then
+            mem.sJerror = event.msg.time
+            --fD('<'..mem.sJerror..'>')
+            local s = mem.sJerror
+
+            -- check for obstructed/self/uncharted -> move to next angle
+            -- or else it's mapgen/power -> wait
+            local sFirst = s:sub(8, 8) or '!'
+            local bSelf = 'j' ==  sFirst
+            local bObstructed = 'J' == sFirst
+            local bUncharted = 'r' == sFirst
+            local bMapgen = 'm' == sFirst
+
+            if bSelf or bObstructed then -- Jump target is obstructed
+
+                -- wait and try next
+                if bSelf then sOut = sOut .. ' S' else sOut = sOut .. ' O' end
+
+            else
+
+                -- wait and try again
+                mem.nAngleCurrent = mem.nAngleCurrent - nAngleStep
+                mem.bEven = not mem.bEven
+                table.remove(mem.tPointsHorizontal)
+                if bMapgen then sOut = sOut ..  ' M'
+                  else sOut = sOut .. ' P' end
+
+            end -- switch error type
+
+        else
+
+            mem.sJerror = ''
+            sOut = sOut .. ' ?'
+
+        end -- if got time message, normally do but jic
+
+    else -- if success or not
+
+        sOut = 'good'
+        mem.bDropping = true
+        interrupt(c.i.deployer)
+
+    end -- if success
+
+    fD(sOut .. ' ' .. tostring(mem.nAngleCurrent))
+
+end -- fHandleJDresponse
+
+
+local fReset = function()
 
     nAngleStep = math.deg( 2 * ( math.asin( math.sqrt( iShipSize * iShipSize * 2 ) / ( 2 * iRadius ) ) ) )
     nAngleStep = fRound(nAngleStep * 100) * 0.01
@@ -386,67 +454,30 @@ if c.e.program == sET then
     mem.bDropping = false
     mem.bMain = false
 
-    -- END first run ----------------------------------------------------------------END init ------------------------------------------
+end -- fReset
+
+
+-- read event
+local sET = event.type
+local sEC = event.channel or c.sNil
+local mEM = event.msg or c.b.sNA
+--local sEID = event.iid or c.sNil
+
+-- debugging the event details
+--fD(sET .. " " .. sEC .. " " .. sEID .. " " .. fDump(mEM))
+
+-- 'First run' (when 'Execute' is clicked on code-edit-form)
+-- this is the 'init' portion --------------------------------------------------------init---------------------------------------------
+if c.e.program == sET then
+
+    fReset()
+
 -- digiline events ------------------------------------------------------------digilines-------------------------------------
 elseif c.e.digiline ==  sET then
 ----------------------------------------------------------------------------jumpdrive-------------------------
     if c.c.jump == sEC then
         --fD('got jumpdrive resp')
-        local sOut
-        mem.errorCode = not event.msg['success']
-        if mem.errorCode then
-            --fD('fail')
-            sOut = 'fail'
-            mem.bDropping = false
-            interrupt(c.i.nextJump)
-
-            if event.msg.time then
-                mem.sJerror = event.msg.time
-                --fD('<'..mem.sJerror..'>')
-                local s = mem.sJerror
-
-                -- check for obstructed/self/uncharted -> move to next angle
-                -- or else it's mapgen/power -> wait
-                local sFirst = s:sub(8, 8) or '!'
-                local bSelf = 'j' ==  sFirst
-                local bObstructed = 'J' == sFirst
-                local bUncharted = 'r' == sFirst
-                local bMapgen = 'm' == sFirst
-
-                if bSelf or bObstructed then -- Jump target is obstructed
-
-                    -- wait and try next
-                    if bSelf then sOut = sOut .. ' S' else sOut = sOut .. ' O' end
-
-                else
-
-                    -- wait and try again
-                    mem.nAngleCurrent = mem.nAngleCurrent - nAngleStep
-                    mem.bEven = not mem.bEven
-                    table.remove(mem.tPointsHorizontal)
-                    if bMapgen then sOut = sOut ..  ' M'
-                      else sOut = sOut .. ' P' end
-
-                end -- switch error type
-
-            else
-
-                mem.sJerror = ''
-                sOut = sOut .. ' ?'
-
-            end -- if got time message, normally do but jic
-
-        else -- if success or not
-
-            sOut = 'good'
-            mem.bDropping = true
-            interrupt(c.i.deployer)
-
-        end -- if success
-
-        fD(sOut .. ' ' .. tostring(mem.nAngleCurrent))
-
-        -----------end -- jumpdrive ---------------------
+        fHandleJDresponse(mEM)
     ------------------------------------------------------------buttons-----------------------
     elseif c.c.butts == sEC then
 
@@ -478,6 +509,7 @@ elseif c.e.off == sET then
 -- interrupt events -------------------------------------------------------------interrupt events -----------------------------------
 elseif c.e.interrupt == sET then
     --fD('irr')
+
     if not mem.bDropping then
         fDoNext()
         return
@@ -485,25 +517,9 @@ elseif c.e.interrupt == sET then
 
     if mem.errorCode then return end
 
-    port[sPinDeployer] = not pin[sPinDeployer]
-
-    mem.fCountDrops = mem.fCountDrops + .5
-    if  mem.fCountDrops < iDrops then
-        -- repeat
-        interrupt(c.i.deployer)
-    else
-        -- reset counter
-       mem.fCountDrops = 0
-       mem.bDropping = false
-       --fD('Done Dropping')
-        if bAutoPilot then
-            interrupt(c.i.nextJump)
-        end -- auto pilot
-    end -- if repeat
+    fDoDrop()
 
     return
-
-    --end -- deployer
 
 -- END interrupt ---------------------------------------------------------------END interrrupts-----------------------------------------
 -- uncaught events
