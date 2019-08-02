@@ -4,8 +4,8 @@
 -- Thanks to the contributions from int
 -- Drop sand/gravel/snow in a circle to mark for building circular structures
 -- Can also be used to place other node-types
--- auto iAngleStep and every full circle increment by int
--- at some point refactor all this code: iAngle -> dAngle as it's not an int but a float and I use f for functions so d for double
+-- auto nAngleStep and every full circle increment by int
+-- at some point refactor all this code: nAngle -> dAngle as it's not an int but a float and I use f for functions so d for double
 
 -- main switch (software-lock to stop any calculations just remove the --)
 --if 1 == 1 then return end
@@ -29,33 +29,33 @@ local tCentre = {
 local iDrops = 1
 
 -- start at this angle 0 to n
-local iFirstAngle = 0
+local nAngleFirst = 0
 
 -- stop at this angle e.g. 720
-local iAngleLast = 16000
+local nAngleLast = 16000
 
 -- steps to take in angle (odd numbers are good)
 -- for radius 150 use .11
 -- for radius under 40 1 seems ok
-local iAngleStep = 40
+local nAngleStep = 40
 
 -- every second jump go somewhere else.
 -- default is 180 but you may want smth like 90 or 20 depending on location and size of ship
 -- not used in version a0.11
-local fAngleOddJumps = 45
+local nAngleOddJumps = 45
 
 -- ignore angles in range
 -- set to negative to not ignore any
-local fAngleIgnoreLow = 315
-local fAngleIgnoreHigh = 361
+local nAngleIgnoreLow = -315
+local nAngleIgnoreHigh = 361
 
 --------------------------------------------------------------------------- know what you are doing here ----------------------
 
 local iShipSize = 3
 
 -- currently jumpdrive freezes with small steps
--- local iAngleStep = math.deg( 2 * ( math.asin( math.sqrt( iShipSize * iShipSize * 2 ) / ( 2 * iRadius ) ) ) )
-local fOneBlockAngle = math.deg( 2 * ( math.asin( math.sqrt( 2 ) / ( 2 * iRadius ) ) ) )
+-- local nAngleStep = math.deg( 2 * ( math.asin( math.sqrt( iShipSize * iShipSize * 2 ) / ( 2 * iRadius ) ) ) )
+local nAngleOneNode = math.deg( 2 * ( math.asin( math.sqrt( 2 ) / ( 2 * iRadius ) ) ) )
 
 -- offset of deployer relative to jump-drive
 local tOffset = {
@@ -66,10 +66,10 @@ local tOffset = {
 
 -- port on which the button is on (upper case A,B,C,D)
 -- currently not used -> using digiline button on channel 'b'
-local sButton = 'B'
+local sPortButton = 'B'
 
 -- port on which the deployer is connected (lower case a,b,c,d)
-local sDeployer = 'd'
+local sPinDeployer = 'd'
 
 -- use autopilot or not (not recommended as so many things can go wrong, keep at false)
 -- not yet implemented, just use a blinky plant on button port
@@ -136,28 +136,32 @@ c.ts.al = 'addlabel' -- name, label, X, Y
 c.ts.avl = 'addvertlabel' -- name, label, X, Y
 
 
+-- simpler find function
 local fFind = function(sHaystack, sNeedle)
     return string.find(sHaystack, sNeedle, 0, true) ~= nil
-end
+end -- fFind
 
 
 -- approximation division
 local fDiv = function(nA, nB)
     return (nA - nA %  nB) / nB
-end
+end -- fDiv
 
 
 -- wrapper functions fo Digiline to shorten typing...
 local fDLs  = function(sChannel, mMessage)
     digiline_send(sChannel, mMessage)
-end
+end -- fDLs
 
 
 -- simple debugging wrapper
+-- whatch out that you don't overload digiline
 local fD = function(mMessage)
+    -- don't do anything if debugging is turned off in constants
     if nil == c.c.debug then return end
+
     fDLs(c.c.debug, fDump(mMessage))
-end
+end -- fD
 
 
 -- dump values for debugging
@@ -193,33 +197,48 @@ local fRound = function(n)
 end -- fRound
 
 
--- calculate coordinates for a certain angle
-local fCirclePoint = function(iR, iAngleDegree)
+-- calculate coordinates for a certain angle (X, Z plane)
+local fCirclePointHorizontal = function(iR, nAngleDegree)
 
     -- convert
-    local fAngle = iAngleDegree * math.pi / 180
+    local nAngle = nAngleDegree * math.pi / 180
     -- calculate coordinate and multiply with radius
-    local fX = iR * math.cos(fAngle)
-    local fZ = iR * math.sin(fAngle)
+    local nX = iR * math.cos(nAngle)
+    local nZ = iR * math.sin(nAngle)
 
     -- return indexed table with rounded values
-    return { x = fRound(fX), z = fRound(fZ) }
+    return { x = fRound(nX), z = fRound(nZ) }
 
-end -- fCirclePoint
+end -- fCirclePointHorizontal
+
+
+-- calculate coordinates for a certain angle in X, Y plane
+local fCirclePointVertical = function(iR, nAngleDegree)
+
+    -- convert
+    local nAngle = nAngleDegree * math.pi / 180
+    -- calculate coordinate and multiply with radius
+    local nX = iR * math.cos(nAngle)
+    local nY = iR * math.sin(nAngle)
+
+    -- return indexed table with rounded values
+    return { x = fRound(nX), y = fRound(nY) }
+
+end -- fCirclePointVertical
 
 
 -- keep track of points we already dropped nodes at
 -- rounding causes duplicates, we don't want to drop more than one
 -- node at any given point
-local fIsUsed = function(tPos)
+local fIsUsedHorizontal = function(tPos)
 
     -- can't have duplicate on first try (or you really are looking for it ;)
-    if 0 == #mem.tUsedPoints then return false end
+    if 0 == #mem.tPointsHorizontal then return false end
 
     -- loop through all the stored points we've been at
     local tP
-    for i = 1, #mem.tUsedPoints do
-        tP = mem.tUsedPoints[i]
+    for i = 1, #mem.tPointsHorizontal do
+        tP = mem.tPointsHorizontal[i]
         -- got a match?
         if (tP.x == tPos.x) and (tP.z == tPos.z) then return true end
     end -- loop i
@@ -227,7 +246,27 @@ local fIsUsed = function(tPos)
     -- no match found
     return false
 
-end -- fIsUsed
+end -- fIsUsedHorizontal
+
+
+local fIsUsedVertical = function(tPos)
+
+    -- can't have duplicate on first try (or you really are looking for it ;)
+    if 0 == #mem.tPointsVertical then return false end
+
+    -- loop through all the stored points we've been at
+    local tP
+    for i = 1, #mem.tPointsVertical do
+        tP = mem.tPointsVertical[i]
+        -- got a match?
+        if (tP.x == tPos.x) and (tP.y == tPos.y) then return true end
+    end -- loop i
+
+    -- no match found
+    return false
+
+end -- fIsUsedVertical
+
 
 ---------------------------------------------------------- fDoNext -----------------
 
@@ -236,30 +275,30 @@ local fDoNext = function()
     -- main switch toggeled on or not?
     if not mem.bMain then return end
 
-    if iAngleLast < mem.iCount then return end
+    if nAngleLast < mem.nAngleCurrent then return end
 
-    local iAngle = mem.iCount
+    local nAngle = mem.nAngleCurrent
     -- adjust odd jumps
-    --if not mem.bEven then iAngle = iAngle + fAngleOddJumps end
+    --if not mem.bEven then nAngle = nAngle + nAngleOddJumps end
 
     -- calculate next coordinates
-    local tPos = fCirclePoint(iRadius, iAngle)
+    local tPos = fCirclePointHorizontal(iRadius, nAngle)
 
     -- check if we used this point already
-    if not fIsUsed(tPos) then
+    if not fIsUsedHorizontal(tPos) then
 
         -- apply offset adjustments
-        local nVal = tCentre.x + tOffset.x + tPos.x
+        local iVal = tCentre.x + tOffset.x + tPos.x
         -- send to drive
-        fDLs(c.c.jump, { command = 'set', key = 'x', value = nVal} )
-        nVal = tCentre.z + tOffset.z + tPos.z
-        fDLs(c.c.jump, { command = 'set', key = 'z', value = nVal} )
+        fDLs(c.c.jump, { command = 'set', key = 'x', value = iVal} )
+        iVal = tCentre.z + tOffset.z + tPos.z
+        fDLs(c.c.jump, { command = 'set', key = 'z', value = iVal} )
 
         -- only send y coordinate on first jump
         -- jump horizontally to avoid a 'jump into itself' error
-        if iFirstAngle == mem.iCount then
-            nVal = tCentre.y + tOffset.y
-            fDLs(c.c.jump, { command = 'set', key = 'y', value = nVal } )
+        if nAngleFirst == mem.nAngleCurrent then
+            iVal = tCentre.y + tOffset.y
+            fDLs(c.c.jump, { command = 'set', key = 'y', value = iVal } )
         end -- if first jump
 
         mem.errorCode = false
@@ -267,7 +306,7 @@ local fDoNext = function()
         -- actually jump!  (but only when rest of program has run)
         fDLs(c.c.jump, { command = 'jump'} )
 
-        table.insert(mem.tUsedPoints, tPos)
+        table.insert(mem.tPointsHorizontal, tPos)
 
         -- we don't need interrupt here as we can wait
         -- for jd signal
@@ -280,39 +319,40 @@ local fDoNext = function()
     end -- if not used pos
 
     -- get out of infinite loops
-    if mem.iCountLast == mem.iCount then
-        mem.iCountRetries = mem.iCountRetries +1
+    if mem.nAnglePrevious == mem.nAngleCurrent then
+        mem.nAngleCurrentRetries = mem.nAngleCurrentRetries +1
         -- tried 4 times? that's enough
-        if 4 == mem.iCountRetries then
-            mem.iCount = mem.iCount + iAngleStep
-            mem.iCountRetries = 0
+        if 4 == mem.nAngleCurrentRetries then
+            mem.nAngleCurrent = mem.nAngleCurrent + nAngleStep
+            mem.nAngleCurrentRetries = 0
         end
     else
-        mem.iCountRetries = 0
+        mem.nAngleCurrentRetries = 0
     end
 
-    local fAngleAdditionalIncrement = 0
+    local nAngleAdditionalIncrement = 0
     -- check if crossing 0 angle
-    if (mem.iCountLast%360 > 180) and (mem.iCount%360 < 180) then
-        fAngleAdditionalIncrement = fOneBlockAngle
-        fD('+1 block angle')
+    if (mem.nAnglePrevious % 360 > 180) and (mem.nAngleCurrent % 360 < 180) then
+        nAngleAdditionalIncrement = nAngleOneNode
+        fD('+1 node angle')
     end
 
-    mem.iCountLast = mem.iCount
-    mem.iCount = mem.iCount + iAngleStep + fAngleAdditionalIncrement
+    mem.nAnglePrevious = mem.nAngleCurrent
+    mem.nAngleCurrent = mem.nAngleCurrent + nAngleStep + nAngleAdditionalIncrement
     -- do we have an ignore-range? if not negative for low then yes
-    if not (0 > fAngleIgnoreLow) then
-        while (mem.iCount%360 > fAngleIgnoreLow)
-          and (mem.iCount%360 < fAngleIgnoreHigh) do
-            mem.iCount = mem.iCount + iAngleStep
+    if not (0 > nAngleIgnoreLow) then
+        while (mem.nAngleCurrent % 360 > nAngleIgnoreLow)
+          and (mem.nAngleCurrent % 360 < nAngleIgnoreHigh) do
+            mem.nAngleCurrent = mem.nAngleCurrent + nAngleStep
         end -- loop out of ignore range
     end -- if using ignore
+
     mem.bEven = not mem.bEven
 
     -- output some info
     local sEvenOdd = 'Even'
     if not mem.bEven then sEvenOdd = 'Odd' end
-    fD(tostring(mem.iCountRetries) .. '-' .. sEvenOdd .. '-' .. tostring(iAngle))
+    fD(tostring(mem.nAngleCurrentRetries) .. '-' .. sEvenOdd .. '-' .. tostring(nAngle))
 
 end -- fDoNext
 
@@ -330,18 +370,19 @@ local mEM = event.msg or c.b.sNA
 -- this is the 'init' portion --------------------------------------------------------init---------------------------------------------
 if c.e.program == sET then
 
-    iAngleStep = math.deg( 2 * ( math.asin( math.sqrt( iShipSize * iShipSize * 2 ) / ( 2 * iRadius ) ) ) )
-    iAngleStep = fRound(iAngleStep * 100) * 0.01
+    nAngleStep = math.deg( 2 * ( math.asin( math.sqrt( iShipSize * iShipSize * 2 ) / ( 2 * iRadius ) ) ) )
+    nAngleStep = fRound(nAngleStep * 100) * 0.01
 
     -- reset values kept in mem
-    mem.iCount = iFirstAngle
+    mem.nAngleCurrent = nAngleFirst
     mem.fCountDrops = 0
-    mem.tUsedPoints = {}
+    mem.tPointsHorizontal = {}
+    mem.tPointsVertical = {}
     mem.bEven = true
     mem.sJerror = ''
     mem.errorCode = 0
-    mem.iCountRetries = 0
-    mem.iCountLast = iFirstAngle
+    mem.nAngleCurrentRetries = 0
+    mem.nAnglePrevious = nAngleFirst -1
     mem.bDropping = false
     mem.bMain = false
 
@@ -380,9 +421,9 @@ elseif c.e.digiline ==  sET then
                 else
 
                     -- wait and try again
-                    mem.iCount = mem.iCount - iAngleStep
+                    mem.nAngleCurrent = mem.nAngleCurrent - nAngleStep
                     mem.bEven = not mem.bEven
-                    table.remove(mem.tUsedPoints)
+                    table.remove(mem.tPointsHorizontal)
                     if bMapgen then sOut = sOut ..  ' M'
                       else sOut = sOut .. ' P' end
 
@@ -403,7 +444,7 @@ elseif c.e.digiline ==  sET then
 
         end -- if success
 
-        fD(sOut .. ' ' .. tostring(mem.iCount))
+        fD(sOut .. ' ' .. tostring(mem.nAngleCurrent))
 
         -----------end -- jumpdrive ---------------------
     ------------------------------------------------------------buttons-----------------------
@@ -425,11 +466,11 @@ elseif c.e.off == sET then
 
     local sPin = event.pin.name
     --fD('Pin: ' .. sPin)
-    if sButton == sPin then
+    if sPortButton == sPin then
         --fD('butt nxt')
 
         --fDoNext()
-        mem.iCount = mem.iCount + iAngleStep
+        mem.nAngleCurrent = mem.nAngleCurrent + nAngleStep
 
     end -- switch pin
 
@@ -444,7 +485,7 @@ elseif c.e.interrupt == sET then
 
     if mem.errorCode then return end
 
-    port[sDeployer] = not pin[sDeployer]
+    port[sPinDeployer] = not pin[sPinDeployer]
 
     mem.fCountDrops = mem.fCountDrops + .5
     if  mem.fCountDrops < iDrops then
