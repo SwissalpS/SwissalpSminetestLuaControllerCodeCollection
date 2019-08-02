@@ -1,5 +1,5 @@
 -- ALPHA CODE!!! THIS IS NOT GOOD FOR PRODUCTION
--- Version a0.11b
+-- Version a0.13b
 -- by SwissalpS and SwissaplS
 -- Thanks to the contributions from int
 -- Drop sand/gravel/snow in a circle to mark for building circular structures
