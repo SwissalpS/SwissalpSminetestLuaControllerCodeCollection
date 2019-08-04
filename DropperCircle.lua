@@ -23,31 +23,30 @@ local tCentre = {
 -- colloseum
 --local tCentre = { x = 9000,  y = 9518,  z = 4000 }
 
+-- offset to jump to, to avoid 'jumping into self' errors
+local tSafeVector = {
+    x = 0,
+    y = 5,
+    z = 0
+}
+
 -- amount of nodes to place at each location
 -- (only usefull for falling nodes like sand and gravel)
 -- default to 1
 local iDrops = 1
 
--- start at this angle [0 to n]
-local nAngleFirst = 0
-
--- stop at this angle e.g. 720
-local nAngleLast = 16000
-
--- steps to take in angle (odd numbers are good)
--- for radius 150 use .11
--- for radius under 40 1 seems ok
-local nAngleStep = 40
-
--- every second jump go somewhere else.
--- default is 180 but you may want smth like 90 or 20 depending on location and size of ship
--- not used in version a0.11
-local nAngleOddJumps = 45
-
 -- ignore angles in range
 -- set to negative to not ignore any
 local nAngleIgnoreLow = -315
 local nAngleIgnoreHigh = 361
+
+-- start at this angle [0 to n]
+-- probably not used in version .14
+local nAngleFirst = 0
+
+-- stop at this angle e.g. 720
+-- probably not used in version .14
+local nAngleLast = 16000
 
 --------------------------------------------------------------------------- know what you are doing here ----------------------
 
@@ -64,11 +63,6 @@ local sPinNameButton = 'B'
 
 -- port on which the deployer is connected (lower case a,b,c,d)
 local sPinDeployer = 'd'
-
--- use autopilot or not (not recommended as so many things can go wrong, keep at false)
--- not yet implemented, just use a blinky plant on button port
-local bAutoPilot = true --false
-
 
 --------------------------------------------------------------------- no more adjustables under this line ----------------------------------------------------------------
 
@@ -128,6 +122,13 @@ c.ts.add = 'adddropdown'  -- name, label, X, Y, W, H, selected_id, choices
 c.ts.af = 'addfield' -- name, label, X, Y, W, H, default
 c.ts.al = 'addlabel' -- name, label, X, Y
 c.ts.avl = 'addvertlabel' -- name, label, X, Y
+
+-- mode constants
+c.m = {}
+c.m.idle = 0
+c.m.dropping = 1
+c.m.jumpOut = 2
+c.m.jumpIn = 3
 
 
 -- simpler find function
@@ -196,10 +197,44 @@ local fAngleOneNode = function(iR)
 end -- fAngleOneNode
 
 
+local fCalculateCirclePointsHorizontal = function()
+
+    fD('Calculating points')
+
+    local nAngleOneNode = fAngleOneNode(iRadius)
+    local nAngle = 0
+    local tPos
+    while nAngle < 363 do
+
+        -- calculate coordinates for current angle
+        tPos = fCirclePointHorizontal(iRadius, nAngle)
+
+        -- add to list if not already
+        if not fIsUsedHorizontal(tPos) then
+            table.insert(mem.tPointsHorizontal, tPos)
+        end
+
+        -- increment angle
+        nAngle = nAngle + nAngleOneNode
+
+        -- check if we are ignoring any angles
+        if not (0 > nAngleIgnoreLow)
+            while (nAngleIgnoreLow >= nAngle) and (nAngle <= nAngleIgnoreHigh) do
+                nAngle = nAngle + nAngleOneNode
+            end
+        end -- if ignoring angles
+
+    end -- loop while
+
+    fD('Done calculating')
+
+end -- fCalculateCirclePointsHorizontal
+
+
 -- calculate coordinates for a certain angle (X, Z plane)
 local fCirclePointHorizontal = function(iR, nAngleDegree)
 
-    -- convert
+    -- convert to radians
     local nAngle = nAngleDegree * math.pi / 180
     -- calculate coordinate and multiply with radius
     local nX = iR * math.cos(nAngle)
@@ -271,18 +306,23 @@ local fDoDrop = function()
 
     port[sPinDeployer] = not pin[sPinDeployer]
 
-    mem.fCountDrops = mem.fCountDrops + .5
-    if  mem.fCountDrops < iDrops then
+    mem.nCountDrops = mem.nCountDrops + .5
+    if  mem.nCountDrops < iDrops then
+
         -- repeat
         interrupt(c.i.deployer)
+
     else
+
         -- reset counter
-       mem.fCountDrops = 0
-       mem.bDropping = false
+       mem.nCountDrops = 0
+
+       mem.iMode = c.m.jumpOut
+
        --fD('Done Dropping')
-        if bAutoPilot then
-            interrupt(c.i.nextJump)
-        end -- auto pilot
+
+       interrupt(c.i.nextJump)
+
     end -- if repeat
 
 end -- fDoDrop
@@ -294,145 +334,190 @@ local fDoNext = function()
     -- main switch toggeled on or not?
     if not mem.bMain then return end
 
-    if nAngleLast < mem.nAngleCurrent then return end
+    if mem.iCountPoints > #mem.tPointsHorizontal then
 
-    local nAngle = mem.nAngleCurrent
-    -- adjust odd jumps
-    --if not mem.bEven then nAngle = nAngle + nAngleOddJumps end
+        mem.iMode = c.m.idle
 
-    -- calculate next coordinates
-    local tPos = fCirclePointHorizontal(iRadius, nAngle)
+        if 0 == #mem.tPointsHorizontal then
 
-    -- check if we used this point already
-    if not fIsUsedHorizontal(tPos) then
+            fD('Error: no points!')
 
-        -- apply offset adjustments
-        local iVal = tCentre.x + tOffset.x + tPos.x
-        -- send to drive
-        fDLs(c.c.jump, { command = 'set', key = 'x', value = iVal} )
-        iVal = tCentre.z + tOffset.z + tPos.z
-        fDLs(c.c.jump, { command = 'set', key = 'z', value = iVal} )
+        else
 
-        -- only send y coordinate on first jump
-        -- jump horizontally to avoid a 'jump into itself' error
-        if nAngleFirst == mem.nAngleCurrent then
-            iVal = tCentre.y + tOffset.y
-            fDLs(c.c.jump, { command = 'set', key = 'y', value = iVal } )
-        end -- if first jump
+            fD('Done, returning to starting point')
 
-        mem.errorCode = false
+            fDLs(c.c.jump, { command = 'set', key = 'x', value = mem.JDinfo.x} )
+            fDLs(c.c.jump, { command = 'set', key = 'z', value = mem.JDinfo.z} )
+            fDLs(c.c.jump, { command = 'set', key = 'y', value = mem.JDinfo.y} )
 
-        -- actually jump!  (but only when rest of program has run)
-        fDLs(c.c.jump, { command = 'jump'} )
+            -- and actually attempt to jump
+            fDLs(c.c.jump, { command = 'jump' } )
 
-        table.insert(mem.tPointsHorizontal, tPos)
+        return
 
-        -- we don't need interrupt here as we can wait
-        -- for jd signal
-        -- interrupt(c.i.deployer, c.id.deployer)
+    end -- error or done
+
+    local tPos0 = mem.tPointsHorizontal[mem.iCountPoints]
+    if mem.iMode == c.m.jumpOut then
+
+        local tPos1 = {
+            x = tPos0.x + tSafeVector.x,
+            y = tPos0.y + tSafeVector.y,
+            z = tPos0.z + tSafeVector.z
+        }
+
+        fJumpTo(tPos1)
+
+    elseif mem.iMode == c.m.jumpIn then
+
+        fJumpTo(tPos0)
+
+    elseif mem.iMode == c.m.dropping then
+
+        fDoDrop()
 
     else
-        fD('pos used')
-        -- we need an interrupt now to keep going
-        interrupt(c.i.deployer)
-    end -- if not used pos
 
-    -- get out of infResete loops
-    if mem.nAnglePrevious == mem.nAngleCurrent then
-        mem.nAngleCurrentRetries = mem.nAngleCurrentRetries +1
-        -- tried 4 times? that's enough
-        if 4 == mem.nAngleCurrentRetries then
-            mem.nAngleCurrent = mem.nAngleCurrent + nAngleStep
-            mem.nAngleCurrentRetries = 0
-        end
-    else
-        mem.nAngleCurrentRetries = 0
-    end
+        fD('unknown mode: ' .. tostring(mem.iMode))
 
-    local nAngleAdditionalIncrement = 0
-    -- check if crossing 0 angle
-    if (mem.nAnglePrevious % 360 > 180) and (mem.nAngleCurrent % 360 < 180) then
-        nAngleAdditionalIncrement = fAngleOneNode(iRadius)
-        fD('+1 node angle')
-    end
-
-    mem.nAnglePrevious = mem.nAngleCurrent
-    mem.nAngleCurrent = mem.nAngleCurrent + nAngleStep + nAngleAdditionalIncrement
-    -- do we have an ignore-range? if not negative for low then yes
-    if not (0 > nAngleIgnoreLow) then
-        while (mem.nAngleCurrent % 360 > nAngleIgnoreLow)
-          and (mem.nAngleCurrent % 360 < nAngleIgnoreHigh) do
-            mem.nAngleCurrent = mem.nAngleCurrent + nAngleStep
-        end -- loop out of ignore range
-    end -- if using ignore
-
-    mem.bEven = not mem.bEven
-
-    -- output some info
-    local sEvenOdd = 'Even'
-    if not mem.bEven then sEvenOdd = 'Odd' end
-    fD(tostring(mem.nAngleCurrentRetries) .. '-' .. sEvenOdd .. '-' .. tostring(nAngle))
+    end -- switch mode
 
 end -- fDoNext
 
 
-local fHandleJDresponse = function(mEM)
+local fHandleJDinfo = function()
+
+    mem.JDinfo.radius = mEM.radius
+    mem.JDinfo.x = mEM.target.x
+    mem.JDinfo.y = mEM.target.y
+    mem.JDinfo.z = mEM.target.z
+
+    fCalculateCirclePointsHorizontal()
+
+    mem.iMode = c.m.jumpOut
+
+    fDoNext()
+
+end -- fHandleJDinfo
+
+
+local fHandleJDresponse = function()
+
+    -- is it response to 'get' command?
+    if nil ~= mEM.radius then
+
+        fHandleJDinfo(mEM)
+
+        return
+
+    end -- if response to 'get'
+
+    mem.bSuccess = mEM['success']
 
     local sOut
-    mem.errorCode = not mEM['success']
-    if mem.errorCode then
+    if mem.bSuccess then
+
+        sOut = 'good'
+
+        if mem.iMode == c.m.jumpIn then
+
+            mem.iMode = c.m.dropping
+
+            interrupt(c.i.deployer)
+
+        else
+
+            mem.iMode = c.m.jumpIn
+
+            interrupt(c.i.nextJump)
+
+        end -- switch mode
+
+    else
         --fD('fail')
+
         sOut = 'fail'
-        mem.bDropping = false
-        interrupt(c.i.nextJump)
 
-        if event.msg.time then
-            mem.sJerror = event.msg.time
+        if mEM.time then
+
+            mem.sJDinfo = mEM.time
             --fD('<'..mem.sJerror..'>')
-            local s = mem.sJerror
+            local s = mem.sJDinfo
 
-            -- check for obstructed/self/uncharted -> move to next angle
-            -- or else it's mapgen/power -> wait
+            -- check for obstructed/self -> move to next angle
+            -- or else it's mapgen/power/uncharted -> wait
             local sFirst = s:sub(8, 8) or '!'
             local bSelf = 'j' ==  sFirst
             local bObstructed = 'J' == sFirst
             local bUncharted = 'r' == sFirst
             local bMapgen = 'm' == sFirst
 
-            if bSelf or bObstructed then -- Jump target is obstructed
+            if bSelf then
 
-                -- wait and try next
-                if bSelf then sOut = sOut .. ' S' else sOut = sOut .. ' O' end
+                fD('Error: jump into self')
+                sOut = sOut .. ' S'
 
-            else
+                -- should no longer happen, so we halt here
 
-                -- wait and try again
-                mem.nAngleCurrent = mem.nAngleCurrent - nAngleStep
-                mem.bEven = not mem.bEven
-                table.remove(mem.tPointsHorizontal)
-                if bMapgen then sOut = sOut ..  ' M'
-                  else sOut = sOut .. ' P' end
+            elseif bObstructed then -- move on to next point
 
-            end -- switch error type
+                sOut = sOut .. ' O'
+
+                interrupt(c.i.deployer)
+
+                mem.iCountPoints = mem.iCountPoints + 1
+
+            else --if bUncharted or bMapgen or power --> wait
+
+                interrupt(c.i.nextJump)
+
+                if bUncharted then
+
+                    sOut = sOut .. ' U'
+
+                elseif bMapgen then
+
+                    sOut = sOut .. ' M'
+
+                else
+
+                    sOut = sOut .. ' P'
+
+                end -- switch error
+
+            end -- switch error
 
         else
+            -- did not have time value in event.msg
 
-            mem.sJerror = ''
+            mem.sJDinfo = ''
+
             sOut = sOut .. ' ?'
 
-        end -- if got time message, normally do but jic
+        end -- if got time value
 
-    else -- if success or not
+    end -- switch success or fail
 
-        sOut = 'good'
-        mem.bDropping = true
-        interrupt(c.i.deployer)
-
-    end -- if success
-
-    fD(sOut .. ' ' .. tostring(mem.nAngleCurrent))
+    fD(sOut .. ' ' .. tostring(mem.iCountPoints))
 
 end -- fHandleJDresponse
+
+
+local fJumpTo(tPos)
+
+    -- apply offset adjustments
+    local iVal = tCentre.x + tOffset.x + tPos.x
+    -- send to drive
+    fDLs(c.c.jump, { command = 'set', key = 'x', value = iVal} )
+    iVal = tCentre.z + tOffset.z + tPos.z
+    fDLs(c.c.jump, { command = 'set', key = 'z', value = iVal} )
+    iVal = tCentre.y + tOffset.y + tPos.y
+    fDLs(c.c.jump, { command = 'set', key = 'y', value = iVal } )
+
+    -- and actually attempt to jump
+    fDLs(c.c.jump, { command = 'jump' } )
+
+end -- fJumpTo
 
 
 local fReset = function()
@@ -441,17 +526,21 @@ local fReset = function()
     nAngleStep = fRound(nAngleStep * 100) * 0.01
 
     -- reset values kept in mem
-    mem.nAngleCurrent = nAngleFirst
-    mem.fCountDrops = 0
+    mem.bMain = false
+    mem.bSuccess = false
+    mem.iCountPoints = 1
+    mem.iMode = c.m.idle
+    mem.JDinfo = {}
+    mem.JDinfo.radius = 0
+    mem.nCountDrops = 0
+    mem.sJDinfo = ''
     mem.tPointsHorizontal = {}
     mem.tPointsVertical = {}
-    mem.bEven = true
-    mem.sJerror = ''
-    mem.errorCode = 0
-    mem.nAngleCurrentRetries = 0
-    mem.nAnglePrevious = nAngleFirst -1
-    mem.bDropping = false
-    mem.bMain = false
+
+    fDLs(c.c.jump, { command = 'reset'} )
+    fDLs(c.c.jump, { command = 'get'} )
+
+    fD('Reset')
 
 end -- fReset
 
@@ -473,19 +562,24 @@ if c.e.program == sET then
 
 -- digiline events ------------------------------------------------------------digilines-------------------------------------
 elseif c.e.digiline ==  sET then
+
 ----------------------------------------------------------------------------jumpdrive-------------------------
     if c.c.jump == sEC then
         --fD('got jumpdrive resp')
-        fHandleJDresponse(mEM)
+
+        fHandleJDresponse()
+
     ------------------------------------------------------------buttons-----------------------
     elseif c.c.butts == sEC then
 
         mem.bMain = not mem.bMain
+
         if mem.bMain then return fDoNext() end
 
         -- buttons ----------------------------END buttons-------------------
 
     end -- stwitch channel
+
     -- END digiline -------------------------------------END digiline-----------------------------
 -- pin high events -------------------------------------pin high----------------------
 elseif c.e.on == sET then
@@ -496,6 +590,7 @@ elseif c.e.off == sET then
 
     local sPin = event.pin.name
     --fD('Pin: ' .. sPin)
+--[[
     if sPinNameButton == sPin then
         --fD('butt nxt')
 
@@ -503,26 +598,19 @@ elseif c.e.off == sET then
         mem.nAngleCurrent = mem.nAngleCurrent + nAngleStep
 
     end -- switch pin
+--]]
 
     -- END pin low ------------------------------------------------------END pin low----------------------
 -- interrupt events -------------------------------------------------------------interrupt events -----------------------------------
 elseif c.e.interrupt == sET then
-    --fD('irr')
+    --fD('interrupt')
 
-    if not mem.bDropping then
-        fDoNext()
-        return
-    end -- if not dropping but autopilot
-
-    if mem.errorCode then return end
-
-    fDoDrop()
-
-    return
+    fDoNext()
 
 -- END interrupt ---------------------------------------------------------------END interrrupts-----------------------------------------
 -- uncaught events
 else
+
     fD('uncaught event')
-    return
+
 end -- switch event-type
