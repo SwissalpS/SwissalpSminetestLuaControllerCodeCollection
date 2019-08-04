@@ -185,6 +185,16 @@ fDump = function(mValue)
 end -- fDump
 
 
+-- read event
+local sET = event.type
+local sEC = event.channel or c.sNil
+local mEM = event.msg or c.b.sNA
+--local sEID = event.iid or c.sNil
+
+-- debugging the event details
+--fD(sET .. " " .. sEC .. " " .. sEID .. " " .. fDump(mEM))
+
+
 -- round numbers naturally and return integer
 local fRound = function(n)
     -- round the value splitting at 0.5
@@ -195,40 +205,6 @@ end -- fRound
 local fAngleOneNode = function(iR)
     return math.deg(2 * (math.asin(math.sqrt(2) / (2 * iR))))
 end -- fAngleOneNode
-
-
-local fCalculateCirclePointsHorizontal = function()
-
-    fD('Calculating points')
-
-    local nAngleOneNode = fAngleOneNode(iRadius)
-    local nAngle = 0
-    local tPos
-    while nAngle < 363 do
-
-        -- calculate coordinates for current angle
-        tPos = fCirclePointHorizontal(iRadius, nAngle)
-
-        -- add to list if not already
-        if not fIsUsedHorizontal(tPos) then
-            table.insert(mem.tPointsHorizontal, tPos)
-        end
-
-        -- increment angle
-        nAngle = nAngle + nAngleOneNode
-
-        -- check if we are ignoring any angles
-        if not (0 > nAngleIgnoreLow)
-            while (nAngleIgnoreLow >= nAngle) and (nAngle <= nAngleIgnoreHigh) do
-                nAngle = nAngle + nAngleOneNode
-            end
-        end -- if ignoring angles
-
-    end -- loop while
-
-    fD('Done calculating')
-
-end -- fCalculateCirclePointsHorizontal
 
 
 -- calculate coordinates for a certain angle (X, Z plane)
@@ -302,6 +278,40 @@ local fIsUsedVertical = function(tPos)
 end -- fIsUsedVertical
 
 
+local fCalculateCirclePointsHorizontal = function()
+
+    fD('Calculating points')
+
+    local nAngleOneNode = fAngleOneNode(iRadius)
+    local nAngle = 0
+    local tPos
+    while nAngle < 363 do
+
+        -- calculate coordinates for current angle
+        tPos = fCirclePointHorizontal(iRadius, nAngle)
+
+        -- add to list if not already
+        if not fIsUsedHorizontal(tPos) then
+            table.insert(mem.tPointsHorizontal, tPos)
+        end
+
+        -- increment angle
+        nAngle = nAngle + nAngleOneNode
+
+        -- check if we are ignoring any angles
+        if not (0 > nAngleIgnoreLow) then
+            while (nAngleIgnoreLow >= nAngle) and (nAngle <= nAngleIgnoreHigh) do
+                nAngle = nAngle + nAngleOneNode
+            end
+        end -- if ignoring angles
+
+    end -- loop while
+
+    fD('Done calculating')
+
+end -- fCalculateCirclePointsHorizontal
+
+
 local fDoDrop = function()
 
     port[sPinDeployer] = not pin[sPinDeployer]
@@ -352,6 +362,8 @@ local fDoNext = function()
 
             -- and actually attempt to jump
             fDLs(c.c.jump, { command = 'jump' } )
+
+        end -- which is it
 
         return
 
@@ -503,7 +515,7 @@ local fHandleJDresponse = function()
 end -- fHandleJDresponse
 
 
-local fJumpTo(tPos)
+local fJumpTo = function(tPos)
 
     -- apply offset adjustments
     local iVal = tCentre.x + tOffset.x + tPos.x
@@ -521,9 +533,6 @@ end -- fJumpTo
 
 
 local fReset = function()
-
-    nAngleStep = math.deg( 2 * ( math.asin( math.sqrt( iShipSize * iShipSize * 2 ) / ( 2 * iRadius ) ) ) )
-    nAngleStep = fRound(nAngleStep * 100) * 0.01
 
     -- reset values kept in mem
     mem.bMain = false
@@ -544,15 +553,6 @@ local fReset = function()
 
 end -- fReset
 
-
--- read event
-local sET = event.type
-local sEC = event.channel or c.sNil
-local mEM = event.msg or c.b.sNA
---local sEID = event.iid or c.sNil
-
--- debugging the event details
---fD(sET .. " " .. sEC .. " " .. sEID .. " " .. fDump(mEM))
 
 -- 'First run' (when 'Execute' is clicked on code-edit-form)
 -- this is the 'init' portion --------------------------------------------------------init---------------------------------------------
