@@ -36,6 +36,7 @@ local iDrops = 1
 
 -- ignore angles in range
 -- set to negative to not ignore any
+-- TODO: multiple pairs so angles overlapping 0 can be ignored too
 local nAngleIgnoreLow = -315
 local nAngleIgnoreHigh = 361
 
@@ -300,7 +301,7 @@ local fCalculateCirclePointsHorizontal = function()
 
         -- check if we are ignoring any angles
         if not (0 > nAngleIgnoreLow) then
-            while (nAngleIgnoreLow >= nAngle) and (nAngle <= nAngleIgnoreHigh) do
+            while (nAngleIgnoreLow <= nAngle) and (nAngle <= nAngleIgnoreHigh) do
                 nAngle = nAngle + nAngleOneNode
             end
         end -- if ignoring angles
