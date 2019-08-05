@@ -4,8 +4,7 @@
 -- Thanks to the contributions from int
 -- Drop sand/gravel/snow in a circle to mark for building circular structures
 -- Can also be used to place other node-types
--- auto nAngleStep and every full circle increment by int
--- at some point refactor all this code: nAngle -> dAngle as it's not an int but a float and I use f for functions so d for double
+-- fAngleOneNode by int-ua (and other help on the way, thanks int)
 
 -- main switch (software-lock to stop any calculations just remove the --)
 --if 1 == 1 then return end
