@@ -129,6 +129,7 @@ c.m.idle = 0
 c.m.dropping = 1
 c.m.jumpOut = 2
 c.m.jumpIn = 3
+c.m.calculating = 4
 
 
 -- simpler find function
@@ -280,10 +281,10 @@ end -- fIsUsedVertical
 
 local fCalculateCirclePointsHorizontal = function()
 
-    fD('Calculating points')
+    fD('Calculating ' .. tostring(0.01 * fRound(100 * mem.nAngleCurrent)))
 
     local nAngleOneNode = fAngleOneNode(iRadius)
-    local nAngle = 0
+    local nAngle = mem.nAngleCurrent
     local tPos
     while nAngle < 363 do
 
@@ -305,9 +306,19 @@ local fCalculateCirclePointsHorizontal = function()
             end
         end -- if ignoring angles
 
+        -- avoid time-outs
+        if heat >= heat_max - 6 then
+            mem.nAngleCurrent = nAngle
+            interrupt(c.i.deployer)
+            return
+        end -- if done a batch
+
     end -- loop while
 
     fD('Done calculating')
+
+    mem.iMode = c.m.jumpOut
+    interrupt(c.i.deployer)
 
 end -- fCalculateCirclePointsHorizontal
 
@@ -337,12 +348,38 @@ local fDoDrop = function()
 
 end -- fDoDrop
 
+
+local fJumpTo = function(tPos)
+
+    -- apply offset adjustments
+    local iVal = tCentre.x + tOffset.x + tPos.x
+    -- send to drive
+    fDLs(c.c.jump, { command = 'set', key = 'x', value = iVal} )
+    iVal = tCentre.z + tOffset.z + tPos.z
+    fDLs(c.c.jump, { command = 'set', key = 'z', value = iVal} )
+    iVal = tCentre.y + tOffset.y + tPos.y
+    fDLs(c.c.jump, { command = 'set', key = 'y', value = iVal } )
+
+    -- and actually attempt to jump
+    fDLs(c.c.jump, { command = 'jump' } )
+
+end -- fJumpTo
+
+
 ---------------------------------------------------------- fDoNext -----------------
 
 local fDoNext = function()
 
     -- main switch toggeled on or not?
     if not mem.bMain then return end
+
+    if mem.iMode == c.m.calculating then
+
+        fCalculateCirclePointsHorizontal()
+
+        return
+
+    end -- if calculating
 
     if mem.iCountPoints > #mem.tPointsHorizontal then
 
@@ -370,6 +407,7 @@ local fDoNext = function()
     end -- error or done
 
     local tPos0 = mem.tPointsHorizontal[mem.iCountPoints]
+    tPos0.y = tCentre.y
     if mem.iMode == c.m.jumpOut then
 
         local tPos1 = {
@@ -404,9 +442,7 @@ local fHandleJDinfo = function()
     mem.JDinfo.y = mEM.target.y
     mem.JDinfo.z = mEM.target.z
 
-    fCalculateCirclePointsHorizontal()
-
-    mem.iMode = c.m.jumpOut
+    mem.iMode = c.m.calculating
 
     fDoNext()
 
@@ -515,23 +551,6 @@ local fHandleJDresponse = function()
 end -- fHandleJDresponse
 
 
-local fJumpTo = function(tPos)
-
-    -- apply offset adjustments
-    local iVal = tCentre.x + tOffset.x + tPos.x
-    -- send to drive
-    fDLs(c.c.jump, { command = 'set', key = 'x', value = iVal} )
-    iVal = tCentre.z + tOffset.z + tPos.z
-    fDLs(c.c.jump, { command = 'set', key = 'z', value = iVal} )
-    iVal = tCentre.y + tOffset.y + tPos.y
-    fDLs(c.c.jump, { command = 'set', key = 'y', value = iVal } )
-
-    -- and actually attempt to jump
-    fDLs(c.c.jump, { command = 'jump' } )
-
-end -- fJumpTo
-
-
 local fReset = function()
 
     -- reset values kept in mem
@@ -541,6 +560,7 @@ local fReset = function()
     mem.iMode = c.m.idle
     mem.JDinfo = {}
     mem.JDinfo.radius = 0
+    mem.nAngleCurrent = 0
     mem.nCountDrops = 0
     mem.sJDinfo = ''
     mem.tPointsHorizontal = {}
