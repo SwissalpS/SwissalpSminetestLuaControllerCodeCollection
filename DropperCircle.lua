@@ -37,6 +37,7 @@ local iDrops = 1
 -- ignore angles in range
 -- set to negative to not ignore any
 -- TODO: multiple pairs so angles overlapping 0 can be ignored too
+-- must be careful as we are at limit with heat/time-oun
 local nAngleIgnoreLow = -315
 local nAngleIgnoreHigh = 361
 
