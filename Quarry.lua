@@ -1,3 +1,5 @@
+-- JD R1 to 12 Quarry and Scout
+-- by SwissalpS
 --do return end
 
 local tl = { }
