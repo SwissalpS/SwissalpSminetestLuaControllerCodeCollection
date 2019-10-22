@@ -97,6 +97,26 @@ tl.fpossame = function(tPosA, tPosB)  if tPosA.x ~= tPosB.x then return false en
 -- make sure you are passing valid position tables
 tl.fposadd = function(tPosA, tPosB)  return { x = tPosA.x + tPosB.x, y = tPosA.y + tPosB.y, z = tPosA.z + tPosB.z } end -- tl.fposadd -- fAddVector
 
+-- make sure you are passing valid position tables
+tl.fpossubtract = function(tPosA, tPosB)  return { x = tPosA.x - tPosB.x, y = tPosA.y - tPosB.y, z = tPosA.z - tPosB.z } end -- tl.fpossubtract -- fSubtractVector
+
+
+-- check if two rectangles intersect
+tl.fposintersect = function(tPosA, iRadiusA, tPosB, iRadiusB)
+    local tAR = {x = iRadiusA, y = iRadiusA, z = iRadiusA}
+	local tA1 = tl.fpossubtract(tPosA, tAR)
+	local tA2 = tl.fposadd(tPosA, tAR)
+
+    local tBR = {x = iRadiusB, y = iRadiusB, z = iRadiusB}
+	local tB1 = tl.fpossubtract(tPosB, tBR)
+	local tB2 = tl.fposadd(tPosB, tBR)
+
+	local bX = (tB1.x <= tA2.x and tB1.x >= tA1.x) or (tB2.x <= tA2.x and tB2.x >= tA1.x)
+	local bY = (tB1.y <= tA2.y and tB1.y >= tA1.y) or (tB2.y <= tA2.y and tB2.y >= tA1.y)
+	local bZ = (tB1.z <= tA2.z and tB1.z >= tA1.z) or (tB2.z <= tA2.z and tB2.z >= tA1.z)
+
+	return bX and bY and bZ
+end -- fposintersect
 
 -- make a pos table from given values
 tl.fmp = function(iX, iY, iZ) return { x = iX, y = iY, z = iZ } end
