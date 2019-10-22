@@ -122,6 +122,7 @@ local fMP = tl.fmp
 
 local tDiffs = {}
 tDiffs.idle = nil
+tDiffs.up = fMP(0, 50, 0)
 tDiffs.down = fMP(0, -50, 0)
 tDiffs.charging = fMP(14, -6, 0)
 tDiffs.north = fMP(0, 0, 24)
@@ -148,30 +149,34 @@ local sEID = event.iid or tl.c.sNil
 
 local fUpdateTouch = function()
     tl.fdls(tl.c.c.touch, { command = 'clear' })
-    local sOut = 'Current location: x: ' .. tostring(mem.JDinfo.x) .. ' y: ' .. tostring(mem.JDinfo.y) .. ' z: ' .. tostring(mem.JDinfo.z) .. ' r: '  .. tostring(mem.JDinfo.radius)
-    sOut = sOut .. ' Mothership location: '
+    local sOut = 'Current location:                 x: ' .. tostring(mem.JDinfo.x) .. ' y: ' .. tostring(mem.JDinfo.y) .. ' z: ' .. tostring(mem.JDinfo.z) .. ' r: '  .. tostring(mem.JDinfo.radius)
+    sOut = sOut .. '\nMothership location:          '
     if nil == mem.tMothership then sOut = sOut .. 'not set' else sOut = sOut .. ' x: ' .. tostring(mem.tMothership.x) .. ' y: ' .. tostring(mem.tMothership.y) .. ' z: ' .. tostring(mem.tMothership.z) end
-    sOut = sOut .. ' Next Mothership location: '
+    sOut = sOut .. '\nNext Mothership location: '
     if nil == mem.tNext then sOut = sOut .. 'not set' else sOut = sOut .. ' x: ' .. tostring(mem.tNext.x) .. ' y: ' .. tostring(mem.tNext.y) .. ' z: ' .. tostring(mem.tNext.z) end
 
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.al, name = 'z', label = sOut, X = 0, Y = 0 })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.al, name = 'y', label = mem.sError, X = 0, Y = 8 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'a', label = 'Set Mothership location', X = 0, Y = 1, W = 2, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'b', label = 'R1 into Mothership', X = 7, Y = 1, W = 2, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'c', label = 'Read from drive', X = 0, Y = 2, W = 2, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'd', label = 'R11 to payload bay', X = 7, Y = 2, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'a', label = 'Set\nMothership Location', X = 4, Y = 2, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'b', label = 'R1 into\nMothership', X = 2, Y = 2, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'c', label = 'Read from drive', X = 4, Y = 0, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'd', label = 'R11 to Payload Bay', X = 7, Y = 2, W = 2, H = 1 })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'e', label = 'R12 down', X = 0, Y = 3, W = 2, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'f', label = 'R1 down', X = 7, Y = 3, W = 2, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'g', label = 'R1 to charging', X = 0, Y = 4, W = 2, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'h', label = 'Set next Mothership location', X = 0, Y = 5, W = 2, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'i', label = 'R1 u SW', X = 5, Y = 4, W = 1, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'j', label = 'R1 u NW', X = 6, Y = 4, W = 1, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'k', label = 'R1 u SE', X = 7, Y = 4, W = 1, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'l', label = 'R1 u NE', X = 8, Y = 4, W = 1, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'm', label = 'R1 d SW', X = 5, Y = 5, W = 1, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'n', label = 'R1 d NW', X = 6, Y = 5, W = 1, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'o', label = 'R1 d SE', X = 7, Y = 5, W = 1, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'p', label = 'R1 d NE', X = 8, Y = 5, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'f', label = 'R1 down', X = 7, Y = 3, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'g', label = 'R1 to charging', X = 0, Y = 2, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'h', label = 'Set\nNext Mothership Location', X = 4, Y = 6, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'i', label = 'R1 u SW', X = 7, Y = 4, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'j', label = 'R1 u NW', X = 8, Y = 4, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'k', label = 'R1 u SE', X = 7, Y = 5, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'l', label = 'R1 u NE', X = 8, Y = 5, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'm', label = 'R1 d SW', X = 7, Y = 6, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'n', label = 'R1 d NW', X = 8, Y = 6, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'o', label = 'R1 d SE', X = 7, Y = 7, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'p', label = 'R1 d NE', X = 8, Y = 7, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'q', label = 'R1 up', X = 7, Y = 1, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.avl, name = 'r', label = 'Relative to MSL', X = 6, Y = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.avl, name = 's', label = 'Relative to NMSL', X = 6, Y = 5 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.al, name = 't', label = '1) Set Mothership Location\n2) Set Next Mothership Location\n3) R1 d SE\n4) R11 Payload Bay\n5) R1 into Mother Ship\n6) dig\n7) R1 d NW -> PLB -> MS -> dig\n8) d SW, d NE, u SE, u NW, u SW, u NE', X = 0, Y = 5 })
 end
 
 
@@ -284,6 +289,9 @@ elseif tl.c.e.digiline == sET then
         elseif mEM.h then
             mem.tNext = tl.fmp(mem.JDinfo.x, mem.JDinfo.y, mem.JDinfo.z)
             fUpdateTouch()
+        elseif mEM.q and (nil ~= mem.tMothership) then
+            tl.fjdr(1)
+            tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.up))
         elseif nil == mem.tNext then
             return
         elseif mEM.i then
