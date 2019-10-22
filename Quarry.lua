@@ -1,7 +1,7 @@
--- JD R1 to 12 Quarry and Scout
--- by SwissalpS
 --do return end
-
+-- Quarry.lua v20191022
+-- Jump Drive code for quarry where scout is also jd for mothership.
+-- by SwissalpS
 -- Defaults to radius 1 scout in centre of radius 12 quarry mothership
 -- Use touchscreen to navigate the repetitive movements of getting the
 -- next target area clear with scout to quarry system.
