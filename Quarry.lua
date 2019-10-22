@@ -2,6 +2,7 @@
 -- by SwissalpS
 --do return end
 
+-- Defaults to radius 1 scout in centre of radius 12 quarry mothership
 -- Use touchscreen to navigate the repetitive movements of getting the
 -- next target area clear with scout to quarry system.
 -- This program expects quarry to dig directly under centre of mothership.
@@ -25,6 +26,24 @@
 15) return to step 1 and at 2 just do [R1 down] and [Set Next Mothership Location]
 --]]
 
+
+-- Radius when scout, expected to be considerably smaller than mothership radius.
+local iRadiusScout = 1
+-- Radius of mothership
+local iRadiusMother = 12
+-- If you have multiple quarries then this is the combined radius of the hole they make.
+local iRadiusQuarry = 11
+-- currently quarry digs 50 deep on pandorabox.io, so that's the down/up step
+local iQuarryDepth = 50
+
+-- without further modifications bellow, this program expects the quarry(ies) to be
+-- on lowest mothership node facing inward.
+
+-- This code uses an attempt of what could be put into a mod as library
+-- it is in condensed form, so not that easy to read
+-- Some functions and variables are not used in this program. I want
+-- to know to what extent a library mod could work. If loading code
+-- directly from luac or through the mod should not be a difference, I hope.
 local tl = { }
 tl.c = { c = { } }
 -- owner of this machine
@@ -58,9 +77,9 @@ tl.c.b.sNA = 'n/a'
 -- mode constants
 tl.c.m = {}
 tl.c.m.idle = 0
-tl.c.m.dropping = 1
-tl.c.m.jumpOut = 2
-tl.c.m.jumpIn = 3
+tl.c.m.quarry = 1
+tl.c.m.scout = 2
+tl.c.m.scoutAuto = 3
 tl.c.m.calculating = 4
 
 -- touch screen constants
@@ -167,14 +186,39 @@ local fMP = tl.fmp
 
 local tDiffs = {}
 tDiffs.idle = nil
-tDiffs.up = fMP(0, 50, 0)
-tDiffs.down = fMP(0, -50, 0)
+tDiffs.up = fMP(0, iQuarryDepth, 0)
+tDiffs.down = fMP(0, -1 * iQuarryDepth, 0)
+-- this may need to be set manually. This assumes power is on east side of mothership and west on scout
+tDiffs.charging = fMP(1 + iRadiusMother + iRadiusScout, -6, 0)
+--[[
+-- this is static R1 + R12 combo
 tDiffs.charging = fMP(14, -6, 0)
 tDiffs.north = fMP(0, 0, 24)
 tDiffs.south = fMP(0, 0, -24)
 tDiffs.west = fMP(0, 0, -24)
 tDiffs.east = fMP(0, 0, 24)
 tDiffs.payload = fMP(0, -20, 0)
+tDiffs.uSW = fMP(-3, 3, -3)
+tDiffs.uSE = fMP(3, 3, -3)
+tDiffs.uNW = fMP(-3, 3, 3)
+tDiffs.uNE = fMP(3, 3, 3)
+tDiffs.dSW = fMP(-3, -3, -3)
+tDiffs.dSE = fMP(3, -3, -3)
+tDiffs.dNW = fMP(-3, -3, 3)
+tDiffs.dNE = fMP(3, -3, 3)
+--]]
+-- let's try a more dynamic approach
+local iDiameterMother = 1 + (2 * iRadiusMother)
+local iDiameterScout = 1 + (2 * iRadiusScout) -- not used
+local iDiameterQuarry = 1 + (2 * iRadiusQuarry) -- not used
+local iDiameterMotherNeg = -1 * iDiameterMother
+local iDiameterScoutNeg = -1 * iDiameterScout -- not used
+local iDiameterQuarryNeg = -1 * iDiameterQuarry -- not used
+tDiffs.north = fMP(0, 0, iDiameterMother)
+tDiffs.south = fMP(0, 0, iDiameterMotherNeg)
+tDiffs.west = fMP(iDiameterMotherNeg, 0, 0)
+tDiffs.east = fMP(iDiameterMother, 0, 0)
+tDiffs.payload = fMP(0, -1 * (iRadiusMother + iRadiusQuarry -3), 0)
 tDiffs.uSW = fMP(-3, 3, -3)
 tDiffs.uSE = fMP(3, 3, -3)
 tDiffs.uNW = fMP(-3, 3, 3)
@@ -192,37 +236,65 @@ local mEM = event.msg or tl.c.b.sNA
 local sEID = event.iid or tl.c.sNil
 
 
-local fUpdateTouch = function()
-    tl.fdls(tl.c.c.touch, { command = 'clear' })
+-- basic clear and info
+local fUpdateTouchBasic = function()
     local sOut = 'Current location:                 x: ' .. tostring(mem.JDinfo.x) .. ' y: ' .. tostring(mem.JDinfo.y) .. ' z: ' .. tostring(mem.JDinfo.z) .. ' r: '  .. tostring(mem.JDinfo.radius)
     sOut = sOut .. '\nMothership location:          '
     if nil == mem.tMothership then sOut = sOut .. 'not set' else sOut = sOut .. ' x: ' .. tostring(mem.tMothership.x) .. ' y: ' .. tostring(mem.tMothership.y) .. ' z: ' .. tostring(mem.tMothership.z) end
     sOut = sOut .. '\nNext Mothership location: '
     if nil == mem.tNext then sOut = sOut .. 'not set' else sOut = sOut .. ' x: ' .. tostring(mem.tNext.x) .. ' y: ' .. tostring(mem.tNext.y) .. ' z: ' .. tostring(mem.tNext.z) end
 
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.al, name = 'z', label = sOut, X = 0, Y = 0 })
+    tl.fdls(tl.c.c.touch, { command = 'clear' })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.al, name = 'y', label = mem.sError, X = 0, Y = 8 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.al, name = 'z', label = sOut, X = 0, Y = 0 })
+end -- fUpdateTouchBasic
+
+
+local fUpdateTouchModeQuarry = function()
+    local sRM = 'R' .. tostring(iRadiusMother)
+    local sRS = 'R' .. tostring(iRadiusScout)
+    local sRQ = 'R' .. tostring(iRadiusQuarry)
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'a', label = 'Set\nMothership Location', X = 4, Y = 2, W = 2, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'b', label = 'R1 into\nMothership', X = 2, Y = 2, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'b', label = sRS .. ' into\nMothership', X = 2, Y = 2, W = 2, H = 1 })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'c', label = 'Read from drive', X = 4, Y = 0, W = 2, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'd', label = 'R11 to Payload Bay', X = 7, Y = 2, W = 2, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'e', label = 'R12 down', X = 0, Y = 3, W = 2, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'f', label = 'R1 down', X = 7, Y = 3, W = 2, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'g', label = 'R1 to charging', X = 0, Y = 2, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'd', label = sRQ .. ' to Payload Bay', X = 7, Y = 2, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'e', label = sRM .. ' down', X = 0, Y = 3, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'f', label = sRS .. ' down', X = 7, Y = 3, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'g', label = sRS .. ' to charging', X = 0, Y = 2, W = 2, H = 1 })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'h', label = 'Set\nNext Mothership Location', X = 4, Y = 6, W = 2, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'i', label = 'R1 u SW', X = 7, Y = 4, W = 1, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'j', label = 'R1 u NW', X = 8, Y = 4, W = 1, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'k', label = 'R1 u SE', X = 7, Y = 5, W = 1, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'l', label = 'R1 u NE', X = 8, Y = 5, W = 1, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'm', label = 'R1 d SW', X = 7, Y = 6, W = 1, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'n', label = 'R1 d NW', X = 8, Y = 6, W = 1, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'o', label = 'R1 d SE', X = 7, Y = 7, W = 1, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'p', label = 'R1 d NE', X = 8, Y = 7, W = 1, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'q', label = 'R1 up', X = 7, Y = 1, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'i', label = sRS .. ' u SW', X = 7, Y = 4, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'j', label = sRS .. ' u NW', X = 8, Y = 4, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'k', label = sRS .. ' u SE', X = 7, Y = 5, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'l', label = sRS .. ' u NE', X = 8, Y = 5, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'm', label = sRS .. ' d SW', X = 7, Y = 6, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'n', label = sRS .. ' d NW', X = 8, Y = 6, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'o', label = sRS .. ' d SE', X = 7, Y = 7, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'p', label = sRS .. ' d NE', X = 8, Y = 7, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'q', label = sRS .. ' up', X = 7, Y = 1, W = 2, H = 1 })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.avl, name = 'r', label = 'Relative to MSL', X = 6, Y = 1 })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.avl, name = 's', label = 'Relative to NMSL', X = 6, Y = 5 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.al, name = 't', label = '1) Set Mothership Location\n2) Set Next Mothership Location\n3) R1 d SE\n4) R11 Payload Bay\n5) R1 into Mother Ship\n6) dig\n7) R1 d NW -> PLB -> MS -> dig\n8) d SW, d NE, u SE, u NW, u SW, u NE', X = 0, Y = 5 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.al, name = 't', label = 'Read comment in code for more information\nd SE -> d NW -> d SW, d NE, u SE, u NW, u SW, u NE', X = 0, Y = 5 })
+end -- fUpdateTouchModeQuarry
+
+
+local fUpdateTouchModeScout = function() end -- fUpdateTouchModeScout
+
+
+local fUpdateTouch = function()
+    fUpdateTouchBasic()
+    if tl.c.m.quarry == mem.iMode then
+      fUpdateTouchModeQuarry()
+    end
 end
+
+local fCheckIntersectWithMother = function()
+    if tl.fposintersect(mem.tMothership, iRadiusMother, mem.JDinfo, iRadiusQuarry) then
+      mem.sError = 'That would damage mothership!'
+      fUpdateTouch()
+      return true
+    end
+    return false
+end -- fCheckIntersectWithMother
 
 
 local fHandleJDinfo = function()
@@ -294,6 +366,7 @@ local fReset = function()
     mem.JDinfo.radius = 0
     mem.sJDinfo = ''
     mem.sError = ''
+    mem.iMode = tl.c.m.quarry
 
     tl.fjdreset()
     tl.fjdg()
@@ -315,53 +388,55 @@ elseif tl.c.e.digiline == sET then
             mem.tMothership = tl.fmp(mem.JDinfo.x, mem.JDinfo.y, mem.JDinfo.z)
             fUpdateTouch()
         elseif mEM.b and (nil ~= mem.tMothership) then
-            tl.fjdr(1)
+            tl.fjdr(iRadiusScout)
             tl.fjdj2(mem.tMothership)
         elseif mEM.c then
             tl.fjdg()
         elseif mEM.d and (nil ~= mem.tMothership) then
-            tl.fjdr(11)
+            tl.fjdr(iRadiusQuarry)
+            if fCheckIntersectWithMother() then return end
             tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.payload))
         elseif mEM.e and (nil ~= mem.tMothership) then
-            tl.fjdr(12)
+            tl.fjdr(iRadiusMother)
+            -- TODO: find a way to allow using this without having to be in mothership but also not damaging when near it
             tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.down))
         elseif mEM.f and (nil ~= mem.tMothership) then
-            tl.fjdr(1)
+            tl.fjdr(iRadiusScout)
             tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.down))
         elseif mEM.g and (nil ~= mem.tMothership) then
-            tl.fjdr(1)
+            tl.fjdr(iRadiusScout)
             tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.charging))
         elseif mEM.h then
             mem.tNext = tl.fmp(mem.JDinfo.x, mem.JDinfo.y, mem.JDinfo.z)
             fUpdateTouch()
         elseif mEM.q and (nil ~= mem.tMothership) then
-            tl.fjdr(1)
+            tl.fjdr(iRadiusScout)
             tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.up))
         elseif nil == mem.tNext then
             return
         elseif mEM.i then
-            tl.fjdr(1)
+            tl.fjdr(iRadiusScout)
             tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.uSW))
         elseif mEM.j then
-            tl.fjdr(1)
+            tl.fjdr(iRadiusScout)
             tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.uNW))
         elseif mEM.k then
-            tl.fjdr(1)
+            tl.fjdr(iRadiusScout)
             tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.uSE))
         elseif mEM.l then
-            tl.fjdr(1)
+            tl.fjdr(iRadiusScout)
             tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.uNE))
         elseif mEM.m then
-            tl.fjdr(1)
+            tl.fjdr(iRadiusScout)
             tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.dSW))
         elseif mEM.n then
-            tl.fjdr(1)
+            tl.fjdr(iRadiusScout)
             tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.dNW))
         elseif mEM.o then
-            tl.fjdr(1)
+            tl.fjdr(iRadiusScout)
             tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.dSE))
         elseif mEM.p then
-            tl.fjdr(1)
+            tl.fjdr(iRadiusScout)
             tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.dNE))
         end
     end
