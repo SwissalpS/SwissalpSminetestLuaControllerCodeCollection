@@ -264,21 +264,21 @@ elseif tl.c.e.digiline == sET then
         if mEM.a then
             mem.tMothership = tl.fmp(mem.JDinfo.x, mem.JDinfo.y, mem.JDinfo.z)
             fUpdateTouch()
-        elseif mEM.b and (nil ~= tMothership) then
+        elseif mEM.b and (nil ~= mem.tMothership) then
             tl.fjdr(1)
             tl.fjdj2(mem.tMothership)
         elseif mEM.c then
             tl.fjdg()
-        elseif mEM.d and (nil ~= tMothership) then
+        elseif mEM.d and (nil ~= mem.tMothership) then
             tl.fjdr(11)
             tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.payload))
-        elseif mEM.e and (nil ~= tMothership) then
+        elseif mEM.e and (nil ~= mem.tMothership) then
             tl.fjdr(12)
             tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.down))
-        elseif mEM.f and (nil ~= tMothership) then
+        elseif mEM.f and (nil ~= mem.tMothership) then
             tl.fjdr(1)
             tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.down))
-        elseif mEM.g and (nil ~= tMothership) then
+        elseif mEM.g and (nil ~= mem.tMothership) then
             tl.fjdr(1)
             tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.charging))
         elseif mEM.h then
