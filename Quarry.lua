@@ -2,6 +2,29 @@
 -- by SwissalpS
 --do return end
 
+-- Use touchscreen to navigate the repetitive movements of getting the
+-- next target area clear with scout to quarry system.
+-- This program expects quarry to dig directly under centre of mothership.
+
+--[[
+1) Set Mothership Location
+2) Jump with scout to next location and [Set Next Mothership Location] over where you want quarry to dig next.
+3) [R1 d SE] (or [R11 Payload Bay] first and dig that away if needed)
+4) [R11 Payload Bay]
+5) [R1 into Mother Ship]
+6) Restart quarry
+7) [R1 d NW] -> [R11 Payload Bay] -> [R1 into Mother Ship] -> dig
+8) [R1 d SW] -> [R11 Payload Bay] -> [R1 into Mother Ship] -> dig
+9) [R1 d NE] -> [R11 Payload Bay] -> [R1 into Mother Ship] -> dig
+10) [R1 u SE] -> [R11 Payload Bay] -> [R1 into Mother Ship] -> dig
+11) [R1 u NW] -> [R11 Payload Bay] -> [R1 into Mother Ship] -> dig
+12) [R1 u SW] -> [R11 Payload Bay] -> [R1 into Mother Ship] -> dig
+13) [R1 u NE] -> [R11 Payload Bay] -> [R1 into Mother Ship] -> dig
+14) [R12 down] or if mothership is not directly over next location step 14b
+14b) you need to jump to next position manually
+15) return to step 1 and at 2 just do [R1 down] and [Set Next Mothership Location]
+--]]
+
 local tl = { }
 tl.c = { c = { } }
 -- owner of this machine
