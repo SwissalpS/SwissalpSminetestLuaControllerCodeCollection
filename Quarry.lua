@@ -211,6 +211,7 @@ tDiffs.dSE = fMP(3, -3, -3)
 tDiffs.dNW = fMP(-3, -3, 3)
 tDiffs.dNE = fMP(3, -3, 3)
 
+local tModes = { 'OFF', 'Quarry', 'Scout', 'Scout Auto' }
 
 -- read event
 local sET = event.type
@@ -228,6 +229,7 @@ local fUpdateTouchBasic = function()
     if nil == mem.tNext then sOut = sOut .. 'not set' else sOut = sOut .. ' x: ' .. tostring(mem.tNext.x) .. ' y: ' .. tostring(mem.tNext.y) .. ' z: ' .. tostring(mem.tNext.z) end
 
     tl.fdls(tl.c.c.touch, { command = 'clear' })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.add, name = 'x', label = 'x', X = 7, Y = 0, W = 2, H = 1, selected_id = mem.iMode +1, choices = tModes })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.al, name = 'y', label = mem.sError, X = 0, Y = 8 })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.al, name = 'z', label = sOut, X = 0, Y = 0 })
 end -- fUpdateTouchBasic
@@ -242,7 +244,7 @@ local fUpdateTouchModeQuarry = function()
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'c', label = 'Read from drive', X = 4, Y = 0, W = 2, H = 1 })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'd', label = sRQ .. ' to Payload Bay', X = 7, Y = 2, W = 2, H = 1 })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'e', label = sRM .. ' down', X = 0, Y = 3, W = 2, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'f', label = sRS .. ' down', X = 7, Y = 3, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'f', label = sRS .. ' bellow', X = 7, Y = 3, W = 2, H = 1 })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'g', label = sRS .. ' to charging', X = 0, Y = 2, W = 2, H = 1 })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'h', label = 'Set\nNext Mothership Location', X = 4, Y = 6, W = 2, H = 1 })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'i', label = sRS .. ' u SW', X = 7, Y = 4, W = 1, H = 1 })
@@ -253,22 +255,49 @@ local fUpdateTouchModeQuarry = function()
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'n', label = sRS .. ' d NW', X = 8, Y = 6, W = 1, H = 1 })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'o', label = sRS .. ' d SE', X = 7, Y = 7, W = 1, H = 1 })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'p', label = sRS .. ' d NE', X = 8, Y = 7, W = 1, H = 1 })
-    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'q', label = sRS .. ' up', X = 7, Y = 1, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'q', label = sRS .. ' above', X = 7, Y = 1, W = 2, H = 1 })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.avl, name = 'r', label = 'Relative to MSL', X = 6, Y = 1 })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.avl, name = 's', label = 'Relative to NMSL', X = 6, Y = 5 })
     tl.fdls(tl.c.c.touch, { command = tl.c.ts.al, name = 't', label = 'Read comment in code for more information\nd SE -> d NW -> d SW, d NE, u SE, u NW, u SW, u NE', X = 0, Y = 5 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.al, name = 'u', label = mem.sHistory, X = 0, Y = 6 })
 end -- fUpdateTouchModeQuarry
 
 
-local fUpdateTouchModeScout = function() end -- fUpdateTouchModeScout
+local fUpdateTouchModeScout = function()
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'c', label = 'Read from drive', X = 4, Y = 0, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.al, name = 'sa', label = 'Jump Vector', X = 1, Y = 4 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'sb', label = 'Jump', X = 0, Y = 1, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.abe, name = 'ss', label = 'Show', X = 2, Y = 1, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'st', label = 'Reset', X = 4, Y = 1, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'sc', label = '++E++', X = 2, Y = 2, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'sd', label = '+E+', X = 2, Y = 3, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'se', label = '++U++', X = 4, Y = 2, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'sf', label = '+U+', X = 4, Y = 3, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'sg', label = '++N++', X = 5, Y = 2, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'sh', label = '+N+', X = 5, Y = 3, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'si', label = '-W-', X = 2, Y = 5, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'sj', label = '--W--', X = 2, Y = 6, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'sk', label = '-D-', X = 4, Y = 5, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'sl', label = '--D--', X = 4, Y = 6, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'sm', label = '-S-', X = 5, Y = 5, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'sn', label = '--S--', X = 5, Y = 6, W = 1, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.ab, name = 'so', label = 'Set Radius 1', X = 8, Y = 4, W = 2, H = 1 })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.af, name = 'sx', label = 'sx', X = 3, Y = 4, W = 1, H = 1, default = tostring(mem.tScout.tVector.x) })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.af, name = 'sy', label = 'sy', X = 4, Y = 4, W = 1, H = 1, default = tostring(mem.tScout.tVector.y) })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.af, name = 'sz', label = 'sz', X = 5, Y = 4, W = 1, H = 1, default = tostring(mem.tScout.tVector.z) })
+    tl.fdls(tl.c.c.touch, { command = tl.c.ts.af, name = 'sr', label = 'sr', X = 7, Y = 4, W = 1, H = 1, default = tostring(mem.tScout.iRadius) })
+end -- fUpdateTouchModeScout
 
 
 local fUpdateTouch = function()
     fUpdateTouchBasic()
     if tl.c.m.quarry == mem.iMode then
-      fUpdateTouchModeQuarry()
+        fUpdateTouchModeQuarry()
+    elseif tl.c.m.scout == mem.iMode then
+        fUpdateTouchModeScout()
     end
-end
+end -- fUpdateTouch
+
 
 local fCheckIntersectWithMother = function()
     if tl.fposintersect(mem.tMothership, iRadiusMother, mem.JDinfo, iRadiusQuarry) then
@@ -280,9 +309,162 @@ local fCheckIntersectWithMother = function()
 end -- fCheckIntersectWithMother
 
 
+local fHandleTouchQuarry = function()
+    if mEM.a then
+        mem.tMothership = tl.fmp(mem.JDinfo.x, mem.JDinfo.y, mem.JDinfo.z)
+        fUpdateTouch()
+        return true
+    elseif mEM.b and (nil ~= mem.tMothership) then
+        tl.fjdr(iRadiusScout)
+        tl.fjdj2(mem.tMothership)
+        return true
+    elseif mEM.c then
+        tl.fjdg()
+        return true
+    elseif mEM.d and (nil ~= mem.tMothership) then
+        tl.fjdr(iRadiusQuarry)
+    if fCheckIntersectWithMother() then return true end
+        tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.payload))
+        return true
+    elseif mEM.e and (nil ~= mem.tMothership) then
+        tl.fjdr(iRadiusMother)
+        -- TODO: find a way to allow using this without having to be in mothership but also not damaging when near it
+        tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.down))
+        return true
+    elseif mEM.f and (nil ~= mem.tMothership) then
+        tl.fjdr(iRadiusScout)
+        tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.down))
+        return true
+    elseif mEM.g and (nil ~= mem.tMothership) then
+        tl.fjdr(iRadiusScout)
+        tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.charging))
+        return true
+    elseif mEM.h then
+        mem.sHistory = ''
+        mem.tNext = tl.fmp(mem.JDinfo.x, mem.JDinfo.y, mem.JDinfo.z)
+        fUpdateTouch()
+        return true
+    elseif mEM.q and (nil ~= mem.tMothership) then
+        tl.fjdr(iRadiusScout)
+        tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.up))
+        return true
+    elseif nil == mem.tNext then
+        return false
+    elseif mEM.i then
+        tl.fjdr(iRadiusScout)
+        tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.uSW))
+        mem.sHistory = mem.sHistory .. 'uSW '
+        return true
+    elseif mEM.j then
+        tl.fjdr(iRadiusScout)
+        tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.uNW))
+        mem.sHistory = mem.sHistory .. 'uNW '
+        return true
+    elseif mEM.k then
+        tl.fjdr(iRadiusScout)
+        tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.uSE))
+        mem.sHistory = mem.sHistory .. 'uSE '
+        return true
+    elseif mEM.l then
+        tl.fjdr(iRadiusScout)
+        tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.uNE))
+        mem.sHistory = mem.sHistory .. 'uNE '
+        return true
+    elseif mEM.m then
+        tl.fjdr(iRadiusScout)
+        tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.dSW))
+        mem.sHistory = mem.sHistory .. 'dSW '
+        return true
+    elseif mEM.n then
+        tl.fjdr(iRadiusScout)
+        tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.dNW))
+        mem.sHistory = mem.sHistory .. 'dNW '
+        return true
+    elseif mEM.o then
+        tl.fjdr(iRadiusScout)
+        tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.dSE))
+        mem.sHistory = mem.sHistory .. 'dSE '
+        return true
+    elseif mEM.p then
+        tl.fjdr(iRadiusScout)
+        tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.dNE))
+        mem.sHistory = mem.sHistory .. 'dNE '
+        return true
+    end
+    return false
+end -- fHandleTouchQuarry
+
+
+local fHandleTouchScout = function()
+    local mVal = nil
+    if mEM.c then
+        tl.fjdg()
+        return true
+    end
+    if mEM.sx then
+        mVal = tonumber(mEM.sx)
+        if nil ~= mVal then mem.tScout.tVector.x = mVal end
+    end
+    if mEM.sy then
+        mVal = tonumber(mEM.sy)
+        if nil ~= mVal then mem.tScout.tVector.y = mVal end
+    end
+    if mEM.sz then
+        mVal = tonumber(mEM.sz)
+        if nil ~= mVal then mem.tScout.tVector.z = mVal end
+    end
+    if mEM.sr then
+        mVal = tonumber(mEM.sr)
+        if nil ~= mVal then mem.tScout.iRadius = mVal end
+    end
+    if mEM.sb then
+        tl.fjdr(mem.tScout.iRadius)
+        tl.fjdj2(tl.fposadd(mem.JDinfo, mem.tScout.tVector))
+        return true
+    elseif mEM.sc then
+        mem.tScout.tVector.x = mem.tScout.tVector.x + 1 + (4 * mem.tScout.iRadius)
+    elseif mEM.sd then
+        mem.tScout.tVector.x = mem.tScout.tVector.x + 1 + (2 * mem.tScout.iRadius)
+    elseif mEM.se then
+        mem.tScout.tVector.y = mem.tScout.tVector.y + 1 + (4 * mem.tScout.iRadius)
+    elseif mEM.sf then
+        mem.tScout.tVector.y = mem.tScout.tVector.y + 1 + (2 * mem.tScout.iRadius)
+    elseif mEM.sg then
+        mem.tScout.tVector.z = mem.tScout.tVector.z + 1 + (4 * mem.tScout.iRadius)
+    elseif mEM.sh then
+        mem.tScout.tVector.z = mem.tScout.tVector.z + 1 + (2 * mem.tScout.iRadius)
+    elseif mEM.si then
+        mem.tScout.tVector.x = mem.tScout.tVector.x - 1 - (2 * mem.tScout.iRadius)
+    elseif mEM.sj then
+        mem.tScout.tVector.x = mem.tScout.tVector.x - 1 - (4 * mem.tScout.iRadius)
+    elseif mEM.sk then
+        mem.tScout.tVector.y = mem.tScout.tVector.y - 1 - (2 * mem.tScout.iRadius)
+    elseif mEM.sl then
+        mem.tScout.tVector.y = mem.tScout.tVector.y - 1 - (4 * mem.tScout.iRadius)
+    elseif mEM.sm then
+        mem.tScout.tVector.z = mem.tScout.tVector.z - 1 - (2 * mem.tScout.iRadius)
+    elseif mEM.sn then
+        mem.tScout.tVector.z = mem.tScout.tVector.z - 1 - (4 * mem.tScout.iRadius)
+    elseif mEM.so then
+        mem.tScout.iRadius = 1
+    elseif mEM.ss then
+        tl.fjdr(mem.tScout.iRadius)
+        tl.fjdp(tl.fposadd(mem.JDinfo, mem.tScout.tVector))
+        tl.fjds()
+        return true
+    elseif mEM.st then
+        tl.fjdreset()
+        tl.fjdg()
+        return true
+    end
+    return false
+end -- fHandleTouchScout
+
+
 local fHandleJDinfo = function()
 
     mem.JDinfo.radius = mEM.radius
+    mem.tScout.iRadius = mem.JDinfo.radius
     mem.JDinfo.x = mEM.target.x
     mem.JDinfo.y = mEM.target.y
     mem.JDinfo.z = mEM.target.z
@@ -335,6 +517,7 @@ local fHandleJDresponse = function()
     end -- switch success or fail
 
     mem.sError = sOut
+    tl.fjdreset()
     tl.fjdg()
 
 end -- fHandleJDresponse
@@ -349,7 +532,9 @@ local fReset = function()
     mem.JDinfo.radius = 0
     mem.sJDinfo = ''
     mem.sError = ''
-    mem.iMode = tl.c.m.quarry
+    if nil == mem.iMode then mem.iMode = tl.c.m.quarry end
+    if nil == mem.sHistory then mem.sHistory = '' end
+    if nil == mem.tScout then mem.tScout = { iRadius = mem.JDinfo.radius, tVector = tl.fmp(0, 3, 0) } end
 
     tl.fjdreset()
     tl.fjdg()
@@ -367,60 +552,14 @@ elseif tl.c.e.digiline == sET then
         fHandleJDresponse()
     elseif tl.c.c.touch == sEC then
         if mEM.clicker ~= tl.c.owner then return end
-        if mEM.a then
-            mem.tMothership = tl.fmp(mem.JDinfo.x, mem.JDinfo.y, mem.JDinfo.z)
-            fUpdateTouch()
-        elseif mEM.b and (nil ~= mem.tMothership) then
-            tl.fjdr(iRadiusScout)
-            tl.fjdj2(mem.tMothership)
-        elseif mEM.c then
-            tl.fjdg()
-        elseif mEM.d and (nil ~= mem.tMothership) then
-            tl.fjdr(iRadiusQuarry)
-            if fCheckIntersectWithMother() then return end
-            tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.payload))
-        elseif mEM.e and (nil ~= mem.tMothership) then
-            tl.fjdr(iRadiusMother)
-            -- TODO: find a way to allow using this without having to be in mothership but also not damaging when near it
-            tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.down))
-        elseif mEM.f and (nil ~= mem.tMothership) then
-            tl.fjdr(iRadiusScout)
-            tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.down))
-        elseif mEM.g and (nil ~= mem.tMothership) then
-            tl.fjdr(iRadiusScout)
-            tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.charging))
-        elseif mEM.h then
-            mem.tNext = tl.fmp(mem.JDinfo.x, mem.JDinfo.y, mem.JDinfo.z)
-            fUpdateTouch()
-        elseif mEM.q and (nil ~= mem.tMothership) then
-            tl.fjdr(iRadiusScout)
-            tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.up))
-        elseif nil == mem.tNext then
-            return
-        elseif mEM.i then
-            tl.fjdr(iRadiusScout)
-            tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.uSW))
-        elseif mEM.j then
-            tl.fjdr(iRadiusScout)
-            tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.uNW))
-        elseif mEM.k then
-            tl.fjdr(iRadiusScout)
-            tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.uSE))
-        elseif mEM.l then
-            tl.fjdr(iRadiusScout)
-            tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.uNE))
-        elseif mEM.m then
-            tl.fjdr(iRadiusScout)
-            tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.dSW))
-        elseif mEM.n then
-            tl.fjdr(iRadiusScout)
-            tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.dNW))
-        elseif mEM.o then
-            tl.fjdr(iRadiusScout)
-            tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.dSE))
-        elseif mEM.p then
-            tl.fjdr(iRadiusScout)
-            tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.dNE))
+        if tl.c.m.quarry == mem.iMode then
+          if fHandleTouchQuarry() then return end
+        elseif tl.c.m.scout == mem.iMode then
+          if fHandleTouchScout() then return end
+        end
+        if mEM.x then
+          for i, s in ipairs(tModes) do if s == mEM.x then mem.iMode = i -1 break end end
+          fUpdateTouch()
         end
     end
 end
