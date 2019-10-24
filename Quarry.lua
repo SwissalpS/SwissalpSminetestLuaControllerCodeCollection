@@ -190,24 +190,7 @@ tDiffs.up = fMP(0, iQuarryDepth, 0)
 tDiffs.down = fMP(0, -1 * iQuarryDepth, 0)
 -- this may need to be set manually. This assumes power is on east side of mothership and west on scout
 tDiffs.charging = fMP(1 + iRadiusMother + iRadiusScout, -6, 0)
---[[
--- this is static R1 + R12 combo
-tDiffs.charging = fMP(14, -6, 0)
-tDiffs.north = fMP(0, 0, 24)
-tDiffs.south = fMP(0, 0, -24)
-tDiffs.west = fMP(0, 0, -24)
-tDiffs.east = fMP(0, 0, 24)
-tDiffs.payload = fMP(0, -20, 0)
-tDiffs.uSW = fMP(-3, 3, -3)
-tDiffs.uSE = fMP(3, 3, -3)
-tDiffs.uNW = fMP(-3, 3, 3)
-tDiffs.uNE = fMP(3, 3, 3)
-tDiffs.dSW = fMP(-3, -3, -3)
-tDiffs.dSE = fMP(3, -3, -3)
-tDiffs.dNW = fMP(-3, -3, 3)
-tDiffs.dNE = fMP(3, -3, 3)
---]]
--- let's try a more dynamic approach
+
 local iDiameterMother = 1 + (2 * iRadiusMother)
 local iDiameterScout = 1 + (2 * iRadiusScout) -- not used
 local iDiameterQuarry = 1 + (2 * iRadiusQuarry) -- not used
