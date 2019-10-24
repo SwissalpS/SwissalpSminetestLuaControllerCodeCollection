@@ -137,6 +137,7 @@ tl.fposintersect = function(tPosA, iRadiusA, tPosB, iRadiusB)
 	return bX and bY and bZ
 end -- fposintersect
 
+
 -- make a pos table from given values
 tl.fmp = function(iX, iY, iZ) return { x = iX, y = iY, z = iZ } end
 
@@ -480,7 +481,6 @@ local fHandleJDresponse = function()
     if nil ~= mEM.radius then
 
         fHandleJDinfo(mEM)
-
         return
 
     end -- if response to 'get'
@@ -491,13 +491,11 @@ local fHandleJDresponse = function()
     if bSuccess then
 
         sOut = ''
-
         mem.bLastWasOK = true
 
     else
 
         mem.bLastWasOK = false
-
         sOut = 'Error: '
 
         if mEM.time then
@@ -509,11 +507,9 @@ local fHandleJDresponse = function()
             -- did not have time value in event.msg
 
             mem.sJDinfo = ''
-
             sOut = sOut .. ' ?'
 
         end -- if got time value
-
     end -- switch success or fail
 
     mem.sError = sOut
