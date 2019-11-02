@@ -79,7 +79,7 @@ tl.c.m = {}
 tl.c.m.idle = 0
 tl.c.m.quarry = 1
 tl.c.m.scout = 2
-tl.c.m.scoutAuto = 3
+tl.c.m.bookmarks = 3
 tl.c.m.calculating = 4
 
 -- touch screen constants
@@ -113,6 +113,7 @@ tl.fdlt = function(tCommand) tl.fdls(tl.c.c.touch, tCommand) end
 -- round numbers naturally and return integer
 tl.fround = function(n) return n + 0.5 - (n - 0.5) % 1 end -- fRound
 
+tl.fpos2s = function(tPos) if (not tPos) or (not tPos.x) or (not tPos.y) or (not tPos.z) then return 'nil' end  return tostring(tPos.x) .. ' | ' .. tostring(tPos.y) .. ' | ' .. tostring(tPos.z) end -- 
 
 tl.fpossame = function(tPosA, tPosB)  if tPosA.x ~= tPosB.x then return false end  if tPosA.y ~= tPosB.y then return false end  if tPosA.z ~= tPosB.z then return false end  return true end -- tl.fpossame -- fIsSamePos
 
@@ -216,7 +217,7 @@ tDiffs.dSE = fMP(3, -3, -3)
 tDiffs.dNW = fMP(-3, -3, 3)
 tDiffs.dNE = fMP(3, -3, 3)
 
-local tModes = { 'OFF', 'Quarry', 'Scout', 'Scout Auto' }
+local tModes = { 'OFF', 'Quarry', 'Scout', 'Bookmarks' }
 
 -- read event
 local sET = event.type
@@ -293,6 +294,49 @@ local fUpdateTouchModeScout = function()
     tl.fdlt({ command = tl.c.ts.af, name = 'sr', label = 'sr', X = 7, Y = 4, W = 1, H = 1, default = tostring(mem.tScout.iRadius) })
 end -- fUpdateTouchModeScout
 
+local fUpdateTouchModeBookmarks = function()
+    tl.fdlt({ command = tl.c.ts.ab, name = 'c', label = 'Read from drive', X = 4, Y = 0, W = 2, H = 1 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bs1', label = 'S1', X = 1, Y = 2, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bj1', label = 'J1', X = 2, Y = 2, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.al, name = '', label = tl.fpos2s(mem.tBookmarks[1]), X = 1.3, Y = 2.7 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bs2', label = 'S2', X = 4, Y = 2, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bj2', label = 'J2', X = 5, Y = 2, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.al, name = '', label = tl.fpos2s(mem.tBookmarks[2]), X = 4.3, Y = 2.7 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bs3', label = 'S3', X = 7, Y = 2, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bj3', label = 'J3', X = 8, Y = 2, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.al, name = '', label = tl.fpos2s(mem.tBookmarks[3]), X = 7.3, Y = 2.7 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bs4', label = 'S4', X = 1, Y = 3, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bj4', label = 'J4', X = 2, Y = 3, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.al, name = '', label = tl.fpos2s(mem.tBookmarks[4]), X = 1.3, Y = 3.7 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bs5', label = 'S5', X = 4, Y = 3, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bj5', label = 'J5', X = 5, Y = 3, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.al, name = '', label = tl.fpos2s(mem.tBookmarks[5]), X = 4.3, Y = 3.7 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bs6', label = 'S6', X = 7, Y = 3, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bj6', label = 'J6', X = 8, Y = 3, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.al, name = '', label = tl.fpos2s(mem.tBookmarks[6]), X = 7.3, Y = 3.7 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bs7', label = 'S7', X = 1, Y = 4, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bj7', label = 'J7', X = 2, Y = 4, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.al, name = '', label = tl.fpos2s(mem.tBookmarks[7]), X = 1.3, Y = 4.7 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bs8', label = 'S8', X = 4, Y = 4, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bj8', label = 'J8', X = 5, Y = 4, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.al, name = '', label = tl.fpos2s(mem.tBookmarks[8]), X = 4.3, Y = 4.7 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bs9', label = 'S9', X = 7, Y = 4, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bj9', label = 'J9', X = 8, Y = 4, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.al, name = '', label = tl.fpos2s(mem.tBookmarks[9]), X = 7.3, Y = 4.7 })
+--[[
+can't handle this many items
+12 worked as long as strings were not also added
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bs10', label = 'S10', X = 1, Y = 5, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bj10', label = 'J10', X = 2, Y = 5, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.al, name = '', label = tl.fpos2s(mem.tBookmarks[10]), X = 1.3, Y = 5.7 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bs11', label = 'S11', X = 4, Y = 5, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bj11', label = 'J11', X = 5, Y = 5, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.al, name = '', label = tl.fpos2s(mem.tBookmarks[11]), X = 4.3, Y = 5.7 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bs12', label = 'S12', X = 7, Y = 5, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'bj12', label = 'J12', X = 8, Y = 5, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.al, name = '', label = tl.fpos2s(mem.tBookmarks[12]), X = 7.3, Y = 5.7 })
+--]]
+end -- fUpdateTouchModeBookmarks
 
 local fUpdateTouch = function()
     fUpdateTouchBasic()
@@ -300,6 +344,8 @@ local fUpdateTouch = function()
         fUpdateTouchModeQuarry()
     elseif tl.c.m.scout == mem.iMode then
         fUpdateTouchModeScout()
+    elseif tl.c.m.bookmarks == mem.iMode then
+        fUpdateTouchModeBookmarks()
     end
 end -- fUpdateTouch
 
@@ -466,6 +512,31 @@ local fHandleTouchScout = function()
 end -- fHandleTouchScout
 
 
+local fHandleTouchBookmarks = function()
+    if mEM.c then
+        tl.fjdg()
+        return true
+    end
+    local bSave
+    local iIndex = 0
+    if mEM.bj1 or mEM.bj2 or mEM.bj3 or mEM.bj4 or mEM.bj5 or mEM.bj6 or mEM.bj7 or mEM.bj8 or mEM.bj9 or mEM.bj10 or mEM.bj11 or mEM.bj12 then
+        bSave = false
+    elseif mEM.bs1 or mEM.bs2 or mEM.bs3 or mEM.bs4 or mEM.bs5 or mEM.bs6 or mEM.bs7 or mEM.bs8 or mEM.bs9 or mEM.bs10 or mEM.bs11 or mEM.bs12 then
+        bSave = true
+    else return false end
+    if mEM.bj1  or mEM.bs1 then iIndex = 1 elseif mEM.bj2 or mEM.bs2 then iIndex = 2 elseif mEM.bj3 or mEM.bs3 then iIndex = 3 elseif mEM.bj4 or mEM.bs4 then iIndex = 4
+    elseif mEM.bj5 or mEM.bs5 then iIndex = 5 elseif mEM.bj6 or mEM.bs6 then iIndex = 6 elseif mEM.bj7 or mEM.bs7 then iIndex = 7 elseif  mEM.bj8 or mEM.bs8 then iIndex = 8
+    elseif mEM.bj9 or mEM.bs9 then iIndex = 9 elseif mEM.bj10 or mEM.bs10 then iIndex = 10 elseif mEM.bj11 or mEM.bs11 then iIndex = 11
+    elseif mEM.bj12 or mEM.bs12 then iIndex = 12 end
+    if bSave then
+        mem.tBookmarks[iIndex] = tl.fmp(mem.JDinfo.x, mem.JDinfo.y, mem.JDinfo.z)
+    elseif mem.tBookmarks[iIndex] then
+        tl.fjdj2(mem.tBookmarks[iIndex])
+    end
+    return true
+end -- fHandleTouchBookmarks
+
+
 local fHandleJDinfo = function()
 
     mem.JDinfo.radius = mEM.radius
@@ -535,6 +606,7 @@ local fReset = function()
     if nil == mem.iMode then mem.iMode = tl.c.m.quarry end
     if nil == mem.sHistory then mem.sHistory = '' end
     if nil == mem.tScout then mem.tScout = { iRadius = mem.JDinfo.radius, tVector = tl.fmp(0, 3, 0) } end
+    if nil == mem.tBookmarks then mem.tBookmarks = {} end
 
     tl.fjdreset()
     tl.fjdg()
@@ -556,6 +628,8 @@ elseif tl.c.e.digiline == sET then
           if fHandleTouchQuarry() then return end
         elseif tl.c.m.scout == mem.iMode then
           if fHandleTouchScout() then return end
+        elseif tl.c.m.bookmarks == mem.iMode then
+          if fHandleTouchBookmarks() then return end
         end
         if mEM.x then
           for i, s in ipairs(tModes) do if s == mEM.x then mem.iMode = i -1 break end end
@@ -563,3 +637,4 @@ elseif tl.c.e.digiline == sET then
         end
     end
 end
+
