@@ -1,5 +1,5 @@
 --do return end
--- Quarry.lua v20191024
+-- Quarry.lua v20191102
 -- Jump Drive code for quarry where scout is also jd for mothership.
 -- by SwissalpS
 -- Defaults to radius 1 scout in centre of radius 12 quarry mothership
