@@ -1,5 +1,5 @@
 --do return end
--- Quarry.lua v20200220
+-- Quarry.lua v20201108
 -- 20200930 added button to jump with scout settings
 -- 20201108 added second button for up and down jumps as scout
 --                    fixed error message parsing.
