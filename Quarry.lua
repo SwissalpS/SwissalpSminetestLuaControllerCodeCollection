@@ -1,5 +1,5 @@
 --do return end
--- Quarry.lua v20201108 (23 JH12 Nuke Qube)
+-- Quarry.lua v20201108 (23 JN12 Nuke Qube)
 -- 20201108 Updated error message handling
 -- Jump Drive code for quarry where scout is also jd for mothership.
 -- by SwissalpS
