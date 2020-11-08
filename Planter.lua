@@ -1,8 +1,10 @@
 --do return end
+-- all except grapes and beans version west to east orientation
+--do mem.tNames = nil mem.tValues = nil  mem = nil return end
 --------------------------------------------------------------------------------
 -- auto farm (for plants that need only 1 node space)
 -- by SwissalpS
--- Version 20191030
+-- Version 20201031
 -- control 2 setups next to each other
 -- The direction is important as the node detector sends signals E, W, N then S
 -- So it's important that the mulching node breaker is signalled after harvesting node breaker
@@ -47,17 +49,19 @@ local c = { c = {}, i = {}, p = {}, t = {} }
 c.owner = 'SwissalpS'
 -- digiline channels
 c.c.button = 'g'
-c.c.mulch = 'a'
-c.c.plant = 'c'
+c.c.mulch = 'm'
+c.c.plant = 'p'
 c.c.timer = 'k'
 c.c.touch = 't'
+c.c.lcd = 'l' --nil
+--c.c.detector = { 'a', 'c' }
 c.c.detector = { 'b', 'd' }
 -- interrupt
 c.i.timer = 5
 -- pin/port
-c.p.mulch = { 'b', 'd' } -- on extender
-c.p.plant = { 'b', 'd' } -- on extender
-c.p.ripe = { 'B', 'D' } -- on lua controller
+c.p.mulch = c.c.detector --{ 'a', 'c' } -- on extender
+c.p.plant = c.c.detector -- { 'a', 'c' } -- on extender
+c.p.ripe = { 'B', 'D' } -- { 'A', 'C' } -- on lua controller
 
 -- choices
 if not mem.tChoicesMulch then
@@ -65,12 +69,11 @@ if not mem.tChoicesMulch then
   for i = 2, 17 do table.insert(mem.tChoicesMulch, tostring(i) .. ' Stacks') end
 end
 if not mem.tNames then
-  mem.tNames = { 'OFF', 'Tomato', 'Cotton', 'Cocoa' }
+  mem.tNames = { 'OFF', 'Barley', 'Beetroot', 'Blueberry', 'Cabbage', 'Carrot', 'Chili', 'Cocoa', 'Coffee', 'Corn', 'Cotton', 'Cucumber', 'Garlic', 'Hemp', 'Melon', 'Mint', 'Oat', 'Onion', 'Pea', 'Pepper', 'Potato', 'Pumpbin', 'Raspberry', 'Rhubarb',  'Rice', 'Rye', 'Tomato', 'Wheat' }
 end
 if not mem.tValues then
-  mem.tValues = { 'OFF', 'farming:tomato_8', 'farming:cotton_8', 'farming:cocoa_4' }
-end
-
+  mem.tValues = { 'OFF', 'farming:barely_7', 'farming:beetroot_5', 'farming:blueberry_4', 'farming:cabbage_6', 'farming:carrot_8', 'farming:chili_8', 'farming:cocoa_4', 'farming:coffee_5', 'farming:corn_8', 'farming:cotton_8', 'farming:cucumber_4', 'farming:garlic_5', 'farming:hemp_8', 'farming:melon_8', 'farming:mint_4', 'farming:oat_8', 'farming:onion_5', 'farming:pea_5', 'farming:pepper_5', 'farming:potato_4', 'farming:pumpkin_8', 'farming:raspberry_4', 'farming:rhubarb_3', 'farming:rice_8', 'farming:rye_8', 'farming:tomato_8', 'farming:wheat_8' }
+end 
 
 -- shorten typing...
 local fDLs  = digiline_send
@@ -78,6 +81,11 @@ local fDLs  = digiline_send
 local function startTimer(sChannel, nTime)  fDLs(sChannel, 'loop_on') fDLs(sChannel, nTime) end
 local function stopTimer(sChannel) fDLs(sChannel, 'loop_off') end
 local function oneShotTimer(sChannel, nTime) stopTimer(sChannel) fDLs(sChannel, nTime) end
+
+local function displayMulchCount()
+  if nil == c.c.lcd then return end
+  fDLs(c.c.lcd, '\n\n' .. c.p.ripe[1] .. ': ' .. tostring(mem.tiMulch[1]) .. '\n' .. c.p.ripe[2] .. ': ' .. tostring(mem.tiMulch[2]) .. '\n\n')
+end -- displayMulchCount
 
 -- touch screen constants
 c.ts = {}
@@ -94,7 +102,7 @@ local function fDLt(tCommand) fDLs(c.c.touch, tCommand) end
 
 local function updateTouch()
 
-  fDLt(c.ts.clear)
+  fDLt({ command = c.ts.clear })
   fDLt({ command = c.ts.abe, name = 'a', label = 'Apply', X = 5, Y = 7, W = 2, H = 1 })
   fDLt({ command = c.ts.al, name = 'b', label = c.p.ripe[1], X = 1, Y = 2 })
   fDLt({ command = c.ts.add, name = 'c', label = '', X = 2, Y = 2, W = 2, H = 1, selected_id = mem.tiSelectedCrop[1], choices = mem.tNames })
@@ -116,6 +124,7 @@ local function onTouch(mEM)
   if mEM.c then
     mVal = 1
     for i, s in ipairs(mem.tNames) do if s == mEM.c then mVal = i break end end
+fDLs(c.c.lcd, mEM.c .. ' ' .. tostring(mVal))
     if mVal ~= mem.tiSelectedCrop[1] then
       mem.tiSelectedCrop[1] = mVal
       fDLs(c.c.detector[1], mem.tValues[mVal])
@@ -219,6 +228,7 @@ local function onTimer()
     if (not bIsHigh) and (2 < mem.tiSelectedMulch[nIndex]) then mem.tiMulch[nIndex] = mem.tiMulch[nIndex] -1 end
     mem.tMulch[c.p.mulch[nIndex]] = not mem.tMulch[c.p.mulch[nIndex]]
     fDLs(c.c.mulch, mem.tMulch)
+    displayMulchCount()
 
   end -- if mulch active
 
@@ -268,4 +278,3 @@ if 'off' == sET then
   end
   return
 end --
-
