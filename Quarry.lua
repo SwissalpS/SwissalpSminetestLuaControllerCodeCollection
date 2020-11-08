@@ -622,7 +622,7 @@ local fHandleJDresponse = function()
 
         if mEM.msg then
 
-            mem.sJDinfo = mEM.time
+            mem.sJDinfo = mEM.msg
             sOut = sOut .. ' ' .. fParseJDerror(mEM.msg)
 
         else
