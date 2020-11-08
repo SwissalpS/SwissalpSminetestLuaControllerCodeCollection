@@ -1,5 +1,5 @@
 --do return end
--- Quarry.lua v20191102
+-- Quarry.lua v20201108 (15 JG12 Geothermal Qube)
 -- Jump Drive code for quarry where scout is also jd for mothership.
 -- by SwissalpS
 -- Defaults to radius 1 scout in centre of radius 12 quarry mothership
@@ -34,7 +34,7 @@ local iRadiusMother = 12
 -- If you have multiple quarries then this is the combined radius of the hole they make.
 local iRadiusQuarry = 11
 -- currently quarry digs 50 deep on pandorabox.io, so that's the down/up step
-local iQuarryDepth = 50
+local iQuarryDepth = 100 --48 --100 --50
 
 -- without further modifications bellow, this program expects the quarry(ies) to be
 -- on lowest mothership node facing inward.
@@ -199,7 +199,7 @@ tDiffs.charging = fMP(1 + iRadiusMother + iRadiusScout, -6, 0)
 
 local iDiameterMother = 1 + (2 * iRadiusMother)
 local iDiameterScout = 1 + (2 * iRadiusScout) -- not used
-local iDiameterQuarry = 1 + (2 * iRadiusQuarry) -- not used
+local iDiameterQuarry = 1 + (2 * iRadiusQuarry)
 local iDiameterMotherNeg = -1 * iDiameterMother
 local iDiameterScoutNeg = -1 * iDiameterScout -- not used
 local iDiameterQuarryNeg = -1 * iDiameterQuarry -- not used
@@ -208,6 +208,9 @@ tDiffs.south = fMP(0, 0, iDiameterMotherNeg)
 tDiffs.west = fMP(iDiameterMotherNeg, 0, 0)
 tDiffs.east = fMP(iDiameterMother, 0, 0)
 tDiffs.payload = fMP(0, -1 * (iRadiusMother + iRadiusQuarry -3), 0)
+tDiffs.payload2 = fMP(0, tDiffs.payload.y - iDiameterQuarry, 0)
+tDiffs.payload3 = fMP(0, tDiffs.payload.y - (2 * iDiameterQuarry), 0)
+tDiffs.payload4 = fMP(0, tDiffs.payload.y - (3 * iDiameterQuarry), 0)
 tDiffs.uSW = fMP(-3, 3, -3)
 tDiffs.uSE = fMP(3, 3, -3)
 tDiffs.uNW = fMP(-3, 3, 3)
@@ -248,7 +251,6 @@ local fUpdateTouchModeQuarry = function()
     tl.fdlt({ command = tl.c.ts.ab, name = 'a', label = 'Set\nMothership Location', X = 4, Y = 2, W = 2, H = 1 })
     tl.fdlt({ command = tl.c.ts.abe, name = 'b', label = sRS .. ' into\nMothership', X = 2, Y = 2, W = 2, H = 1 })
     tl.fdlt({ command = tl.c.ts.ab, name = 'c', label = 'Read from drive', X = 4, Y = 0, W = 2, H = 1 })
-    tl.fdlt({ command = tl.c.ts.abe, name = 'd', label = sRQ .. ' to Payload Bay', X = 7, Y = 2, W = 2, H = 1 })
     tl.fdlt({ command = tl.c.ts.abe, name = 'e', label = sRM .. ' down', X = 0, Y = 3, W = 2, H = 1 })
     tl.fdlt({ command = tl.c.ts.ab, name = 'f', label = sRS .. ' bellow', X = 7, Y = 3, W = 2, H = 1 })
     tl.fdlt({ command = tl.c.ts.abe, name = 'g', label = sRS .. ' to charging', X = 0, Y = 2, W = 2, H = 1 })
@@ -266,32 +268,49 @@ local fUpdateTouchModeQuarry = function()
     tl.fdlt({ command = tl.c.ts.avl, name = 's', label = 'Relative to NMSL', X = 6, Y = 5 })
     tl.fdlt({ command = tl.c.ts.al, name = 't', label = 'Read comment in code for more information\nd SE -> d NW -> d SW, d NE, u SE, u NW, u SW, u NE', X = 0, Y = 5 })
     tl.fdlt({ command = tl.c.ts.al, name = 'u', label = mem.sHistory, X = 0, Y = 6 })
+    local iSegments = math.floor(iQuarryDepth / iDiameterQuarry)
+    if 1 == iSegments then
+      tl.fdlt({ command = tl.c.ts.abe, name = 'd', label = sRQ .. ' to Payload Bay', X = 7, Y = 2, W = 2, H = 1 })
+    elseif 2 == iSegments then
+      tl.fdlt({ command = tl.c.ts.abe, name = 'd', label = sRQ .. ' to Payload Bay', X = 7, Y = 2, W = 2, H = 1 })
+      tl.fdlt({ command = tl.c.ts.abe, name = 'd1', label = sRQ .. ' 2 PLB2', X = 9, Y = 2, W = 1, H = 1 })
+    elseif 3 == iSegments then
+      tl.fdlt({ command = tl.c.ts.abe, name = 'd', label = sRQ .. ' 2 PLB0', X = 7, Y = 2, W = 1, H = 1 })
+      tl.fdlt({ command = tl.c.ts.abe, name = 'd1', label = sRQ .. ' 2 PLB1', X = 8, Y = 2, W = 1, H = 1 })
+      tl.fdlt({ command = tl.c.ts.abe, name = 'd2', label = sRQ .. ' 2 PLB2', X = 9, Y = 2, W = 1, H = 1 })
+    else
+      tl.fdlt({ command = tl.c.ts.abe, name = 'd', label = sRQ .. ' 2 PLB0', X = 6, Y = 2, W = 1, H = 1 })
+      tl.fdlt({ command = tl.c.ts.abe, name = 'd1', label = sRQ .. ' 2 PLB1', X = 7, Y = 2, W = 1, H = 1 })
+      tl.fdlt({ command = tl.c.ts.abe, name = 'd2', label = sRQ .. ' 2 PLB2', X = 8, Y = 2, W = 1, H = 1 })
+      tl.fdlt({ command = tl.c.ts.abe, name = 'd3', label = sRQ .. ' 2 PLB3', X = 9, Y = 2, W = 1, H = 1 })
+    end
+    tl.fdlt({ command = tl.c.ts.ab, name = 'w', label = sRM .. ' to\nNext Mothership Location', X = 4, Y = 7, W = 2, H = 1 })
 end -- fUpdateTouchModeQuarry
 
 
 local fUpdateTouchModeScout = function()
     tl.fdlt({ command = tl.c.ts.ab, name = 'c', label = 'Read from drive', X = 4, Y = 0, W = 2, H = 1 })
     tl.fdlt({ command = tl.c.ts.al, name = 'sa', label = 'Jump Vector', X = 1, Y = 4 })
-    tl.fdlt({ command = tl.c.ts.abe, name = 'sb', label = 'Jump', X = 0, Y = 1, W = 2, H = 1 })
-    tl.fdlt({ command = tl.c.ts.abe, name = 'ss', label = 'Show', X = 2, Y = 1, W = 2, H = 1 })
-    tl.fdlt({ command = tl.c.ts.ab, name = 'st', label = 'Reset', X = 4, Y = 1, W = 2, H = 1 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'sb', label = 'Jump', X = 0, Y = 1.2, W = 2, H = 1 })
+    tl.fdlt({ command = tl.c.ts.abe, name = 'ss', label = 'Show', X = 2, Y = 1.2, W = 2, H = 1 })
+    tl.fdlt({ command = tl.c.ts.ab, name = 'st', label = 'Reset', X = 4, Y = 1.2, W = 2, H = 1 })
     tl.fdlt({ command = tl.c.ts.ab, name = 'sc', label = '++E++', X = 2, Y = 2, W = 1, H = 1 })
     tl.fdlt({ command = tl.c.ts.ab, name = 'sd', label = '+E+', X = 2, Y = 3, W = 1, H = 1 })
-    tl.fdlt({ command = tl.c.ts.ab, name = 'se', label = '++U++', X = 4, Y = 2, W = 1, H = 1 })
-    tl.fdlt({ command = tl.c.ts.ab, name = 'sf', label = '+U+', X = 4, Y = 3, W = 1, H = 1 })
-    tl.fdlt({ command = tl.c.ts.ab, name = 'sg', label = '++N++', X = 5, Y = 2, W = 1, H = 1 })
-    tl.fdlt({ command = tl.c.ts.ab, name = 'sh', label = '+N+', X = 5, Y = 3, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.ab, name = 'se', label = '++U++', X = 3, Y = 2, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.ab, name = 'sf', label = '+U+', X = 3, Y = 3, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.ab, name = 'sg', label = '++N++', X = 4, Y = 2, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.ab, name = 'sh', label = '+N+', X = 4, Y = 3, W = 1, H = 1 })
     tl.fdlt({ command = tl.c.ts.ab, name = 'si', label = '-W-', X = 2, Y = 5, W = 1, H = 1 })
     tl.fdlt({ command = tl.c.ts.ab, name = 'sj', label = '--W--', X = 2, Y = 6, W = 1, H = 1 })
-    tl.fdlt({ command = tl.c.ts.ab, name = 'sk', label = '-D-', X = 4, Y = 5, W = 1, H = 1 })
-    tl.fdlt({ command = tl.c.ts.ab, name = 'sl', label = '--D--', X = 4, Y = 6, W = 1, H = 1 })
-    tl.fdlt({ command = tl.c.ts.ab, name = 'sm', label = '-S-', X = 5, Y = 5, W = 1, H = 1 })
-    tl.fdlt({ command = tl.c.ts.ab, name = 'sn', label = '--S--', X = 5, Y = 6, W = 1, H = 1 })
-    tl.fdlt({ command = tl.c.ts.ab, name = 'so', label = 'Set Radius 1', X = 8, Y = 4, W = 2, H = 1 })
-    tl.fdlt({ command = tl.c.ts.af, name = 'sx', label = 'sx', X = 3, Y = 4, W = 1, H = 1, default = tostring(mem.tScout.tVector.x) })
-    tl.fdlt({ command = tl.c.ts.af, name = 'sy', label = 'sy', X = 4, Y = 4, W = 1, H = 1, default = tostring(mem.tScout.tVector.y) })
-    tl.fdlt({ command = tl.c.ts.af, name = 'sz', label = 'sz', X = 5, Y = 4, W = 1, H = 1, default = tostring(mem.tScout.tVector.z) })
-    tl.fdlt({ command = tl.c.ts.af, name = 'sr', label = 'sr', X = 7, Y = 4, W = 1, H = 1, default = tostring(mem.tScout.iRadius) })
+    tl.fdlt({ command = tl.c.ts.ab, name = 'sk', label = '-D-', X = 3, Y = 5, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.ab, name = 'sl', label = '--D--', X = 3, Y = 6, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.ab, name = 'sm', label = '-S-', X = 4, Y = 5, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.ab, name = 'sn', label = '--S--', X = 4, Y = 6, W = 1, H = 1 })
+    tl.fdlt({ command = tl.c.ts.ab, name = 'so', label = 'Set Radius 1', X = 6, Y = 4, W = 2, H = 1 })
+    tl.fdlt({ command = tl.c.ts.af, name = 'sx', label = 'x', X = 2.3, Y = 4.3, W = 1, H = 1, default = tostring(mem.tScout.tVector.x) })
+    tl.fdlt({ command = tl.c.ts.af, name = 'sy', label = 'y', X = 3.3, Y = 4.3, W = 1, H = 1, default = tostring(mem.tScout.tVector.y) })
+    tl.fdlt({ command = tl.c.ts.af, name = 'sz', label = 'z', X = 4.3, Y = 4.3, W = 1, H = 1, default = tostring(mem.tScout.tVector.z) })
+    tl.fdlt({ command = tl.c.ts.af, name = 'sr', label = 'radius', X = 5.3, Y = 4.3, W = 1, H = 1, default = tostring(mem.tScout.iRadius) })
 end -- fUpdateTouchModeScout
 
 local fUpdateTouchModeBookmarks = function()
@@ -374,8 +393,23 @@ local fHandleTouchQuarry = function()
         return true
     elseif mEM.d and (nil ~= mem.tMothership) then
         tl.fjdr(iRadiusQuarry)
-    if fCheckIntersectWithMother() then return true end
+        if fCheckIntersectWithMother() then return true end
         tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.payload))
+        return true
+    elseif mEM.d1 and (nil ~= mem.tMothership) then
+        tl.fjdr(iRadiusQuarry)
+        if fCheckIntersectWithMother() then return true end
+        tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.payload2))
+        return true
+    elseif mEM.d2 and (nil ~= mem.tMothership) then
+        tl.fjdr(iRadiusQuarry)
+        if fCheckIntersectWithMother() then return true end
+        tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.payload3))
+        return true
+    elseif mEM.d3 and (nil ~= mem.tMothership) then
+        tl.fjdr(iRadiusQuarry)
+        if fCheckIntersectWithMother() then return true end
+        tl.fjdj2(tl.fposadd(mem.tMothership, tDiffs.payload4))
         return true
     elseif mEM.e and (nil ~= mem.tMothership) then
         tl.fjdr(iRadiusMother)
@@ -440,6 +474,10 @@ local fHandleTouchQuarry = function()
         tl.fjdr(iRadiusScout)
         tl.fjdj2(tl.fposadd(mem.tNext, tDiffs.dNE))
         mem.sHistory = mem.sHistory .. 'dNE '
+        return true
+    elseif mEM.w then
+        tl.fjdr(iRadiusMother)
+        tl.fjdj2(mem.tNext)
         return true
     end
     return false
@@ -573,13 +611,13 @@ local fHandleJDresponse = function()
         mem.bLastWasOK = false
         sOut = 'Error: '
 
-        if mEM.time then
+        if mEM.msg then
 
-            mem.sJDinfo = mEM.time
-            sOut = sOut .. ' ' .. fParseJDerror(mEM.time)
+            mem.sJDinfo = mEM.msg
+            sOut = sOut .. ' ' .. fParseJDerror(mEM.msg)
 
         else
-            -- did not have time value in event.msg
+            -- did not have value in event.msg.msg
 
             mem.sJDinfo = ''
             sOut = sOut .. ' ?'
@@ -637,4 +675,3 @@ elseif tl.c.e.digiline == sET then
         end
     end
 end
-
