@@ -3,7 +3,7 @@
 -- author: SwissalpS
 -- licence: MIT
 -- description: Build a hollow sphere using digibuilder and a
---              lua- or mooncontroller.
+--              lua-, mooncontroller or pipeworks lua sorting tube.
 --              The points are checked one per second. Making this slower
 --              than building from a table of precalculated points. However
 --              this approach is less likely to time-out.
