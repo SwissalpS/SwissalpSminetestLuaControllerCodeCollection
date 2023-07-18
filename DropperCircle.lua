@@ -145,10 +145,8 @@ local fDiv = function(nA, nB)
 end -- fDiv
 
 
--- wrapper functions fo Digiline to shorten typing...
-local fDLs  = function(sChannel, mMessage)
-    digiline_send(sChannel, mMessage)
-end -- fDLs
+-- alias to shorten typing...
+local fDLs  = digiline_send
 
 
 -- simple debugging wrapper
