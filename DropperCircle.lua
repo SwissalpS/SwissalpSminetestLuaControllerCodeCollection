@@ -351,17 +351,16 @@ end -- fDoDrop
 
 local fJumpTo = function(tPos)
 
-    -- apply offset adjustments
-    local iVal = tCentre.x + tOffset.x + tPos.x
+    -- apply offset adjustments,
     -- send to drive
-    fDLs(c.c.jump, { command = 'set', key = 'x', value = iVal} )
-    iVal = tCentre.z + tOffset.z + tPos.z
-    fDLs(c.c.jump, { command = 'set', key = 'z', value = iVal} )
-    iVal = tCentre.y + tOffset.y + tPos.y
-    fDLs(c.c.jump, { command = 'set', key = 'y', value = iVal } )
+    fDLs(c.c.jump, { command = 'set',
+            x = tCentre.x + tOffset.x + tPos.x,
+            y = tCentre.y + tOffset.y + tPos.y,
+            z = tCentre.z + tOffset.z + tPos.z,
+    })
 
     -- and actually attempt to jump
-    fDLs(c.c.jump, { command = 'jump' } )
+    fDLs(c.c.jump, { command = 'jump' })
 
 end -- fJumpTo
 
@@ -393,12 +392,14 @@ local fDoNext = function()
 
             fD('Done, returning to starting point')
 
-            fDLs(c.c.jump, { command = 'set', key = 'x', value = mem.JDinfo.x} )
-            fDLs(c.c.jump, { command = 'set', key = 'z', value = mem.JDinfo.z} )
-            fDLs(c.c.jump, { command = 'set', key = 'y', value = mem.JDinfo.y} )
+            fDLs(c.c.jump, { command = 'set',
+                    x = mem.JDinfo.x,
+                    z = mem.JDinfo.z,
+                    y = mem.JDinfo.y
+            })
 
             -- and actually attempt to jump
-            fDLs(c.c.jump, { command = 'jump' } )
+            fDLs(c.c.jump, { command = 'jump' })
 
         end -- which is it
 
@@ -566,8 +567,8 @@ local fReset = function()
     mem.tPointsHorizontal = {}
     mem.tPointsVertical = {}
 
-    fDLs(c.c.jump, { command = 'reset'} )
-    fDLs(c.c.jump, { command = 'get'} )
+    fDLs(c.c.jump, { command = 'reset'})
+    fDLs(c.c.jump, { command = 'get'})
 
     fD('Reset')
 
