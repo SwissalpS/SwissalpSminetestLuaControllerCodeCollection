@@ -198,7 +198,8 @@ local mEM = event.msg or c.b.sNA
 -- round numbers naturally and return integer
 local fRound = function(n)
     -- round the value splitting at 0.5
-    return n + 0.5 - (n - 0.5) % 1
+    if 0 < n then return math.floor(n + .5) end
+    return math.ceil(n - .5)
 end -- fRound
 
 
