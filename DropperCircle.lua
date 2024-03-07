@@ -1,5 +1,5 @@
 -- ALPHA CODE!!! THIS IS NOT GOOD FOR PRODUCTION
--- Version a0.1A
+-- Version a0.1B
 -- by SwissalpS and SwissaplS
 -- Thanks to the contributions from int
 -- Drop sand/gravel/snow in a circle to mark for building circular structures
@@ -145,10 +145,8 @@ local fDiv = function(nA, nB)
 end -- fDiv
 
 
--- wrapper functions fo Digiline to shorten typing...
-local fDLs  = function(sChannel, mMessage)
-    digiline_send(sChannel, mMessage)
-end -- fDLs
+-- alias to shorten typing...
+local fDLs  = digiline_send
 
 
 -- simple debugging wrapper
@@ -200,7 +198,8 @@ local mEM = event.msg or c.b.sNA
 -- round numbers naturally and return integer
 local fRound = function(n)
     -- round the value splitting at 0.5
-    return n + 0.5 - (n - 0.5) % 1
+    if 0 < n then return math.floor(n + .5) end
+    return math.ceil(n - .5)
 end -- fRound
 
 
@@ -352,17 +351,16 @@ end -- fDoDrop
 
 local fJumpTo = function(tPos)
 
-    -- apply offset adjustments
-    local iVal = tCentre.x + tOffset.x + tPos.x
+    -- apply offset adjustments,
     -- send to drive
-    fDLs(c.c.jump, { command = 'set', key = 'x', value = iVal} )
-    iVal = tCentre.z + tOffset.z + tPos.z
-    fDLs(c.c.jump, { command = 'set', key = 'z', value = iVal} )
-    iVal = tCentre.y + tOffset.y + tPos.y
-    fDLs(c.c.jump, { command = 'set', key = 'y', value = iVal } )
+    fDLs(c.c.jump, { command = 'set',
+            x = tCentre.x + tOffset.x + tPos.x,
+            y = tCentre.y + tOffset.y + tPos.y,
+            z = tCentre.z + tOffset.z + tPos.z,
+    })
 
     -- and actually attempt to jump
-    fDLs(c.c.jump, { command = 'jump' } )
+    fDLs(c.c.jump, { command = 'jump' })
 
 end -- fJumpTo
 
@@ -394,12 +392,14 @@ local fDoNext = function()
 
             fD('Done, returning to starting point')
 
-            fDLs(c.c.jump, { command = 'set', key = 'x', value = mem.JDinfo.x} )
-            fDLs(c.c.jump, { command = 'set', key = 'z', value = mem.JDinfo.z} )
-            fDLs(c.c.jump, { command = 'set', key = 'y', value = mem.JDinfo.y} )
+            fDLs(c.c.jump, { command = 'set',
+                    x = mem.JDinfo.x,
+                    z = mem.JDinfo.z,
+                    y = mem.JDinfo.y
+            })
 
             -- and actually attempt to jump
-            fDLs(c.c.jump, { command = 'jump' } )
+            fDLs(c.c.jump, { command = 'jump' })
 
         end -- which is it
 
@@ -567,8 +567,8 @@ local fReset = function()
     mem.tPointsHorizontal = {}
     mem.tPointsVertical = {}
 
-    fDLs(c.c.jump, { command = 'reset'} )
-    fDLs(c.c.jump, { command = 'get'} )
+    fDLs(c.c.jump, { command = 'reset'})
+    fDLs(c.c.jump, { command = 'get'})
 
     fD('Reset')
 

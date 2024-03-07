@@ -1,0 +1,69 @@
+#!/usr/bin/lua
+-- findShperePoints.luas
+-- version: 20230718.1912
+-- author: SwissalpS
+-- licence: MIT
+-- description: Find points of a hollow spheres for given radius.
+--              Designed for use with voxel-games.
+--              Prints the points in compact form as a lua arrays.
+--              Starting at set radius all the way down to r == 1.
+--
+--              Make the file executable and run from terminal.
+
+-- the outer radius of the biggest sphere
+local iR = 15
+
+-- CONFIG END --
+
+-- convert position table to string (for debugging, not used by script)
+local pos2s = function(tP)
+  if (not tP) or (not 'table' == type(tP)) or (not tP.x) or (not tP.y) or (not tP.z) then
+    return 'nil'
+  end
+  return tostring(tP.x) .. ' | ' .. tostring(tP.y) .. ' | ' .. tostring(tP.z) .. (tP.r and ' r' .. tostring(tP.r) or '')
+end
+
+-- round a number to zero fractional didgits (not actually used in this code)
+local round = function(n)
+  if 0 < n then return math.floor(n + .5) end
+  return math.ceil(n - .5)
+end
+
+-- determine 3d length
+local function length(x, y, z)
+  return math.sqrt(x * x + y * y + z * z)
+end
+
+local x, y, z, iD, iRi, iRo
+local s = ''
+
+repeat
+  iRo = iR
+  iRi = iR - 1
+  x, y, z = -iR, -iR, -iR
+  s = s .. 'p[' .. iR .. ']={'
+
+  repeat
+    repeat
+      repeat
+        iD = length(x, y, z)
+        if iD <= iRo and iD >= iRi then
+          s = s .. '{x=' .. x .. ',y=' .. y .. ',z=' .. z .. '},'
+        end
+        z = z + 1
+      until z > iR
+      z = -iR
+      y = y + 1
+    until y > iR
+    y = -iR
+    x = x + 1
+  until x > iR
+  x = -iR
+  s = s:sub(1, -2) .. '}\n'
+
+  iR = iR - 1
+until 0 == iR
+print(s)
+
+
+---
